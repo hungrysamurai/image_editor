@@ -27,7 +27,7 @@ class ImageEditor {
     this.cropper = new Cropper(this.initImageDOM(this.blob), {
       viewMode: 2,
       dragMode: "none",
-      modal: false,
+      modal: true,
       background: false,
       autoCrop: false,
       ready: () => {
@@ -55,6 +55,7 @@ class ImageEditor {
             maxWidth: 4096,
             maxHeight: 4096,
           });
+
           this.cropperHistory.push(this.initialCanvas);
           this.setUndoBtn();
         }
@@ -112,10 +113,10 @@ class ImageEditor {
   }
 
   setUndoBtn() {
-    if (this.cropperHistory.length > 1) {
-      cropperUndoBtn.disabled = false;
-    } else {
+    if (this.cropperHistory.length === 1) {
       cropperUndoBtn.disabled = true;
+    } else {
+      cropperUndoBtn.disabled = false;
     }
   }
 
@@ -126,27 +127,34 @@ class ImageEditor {
   }
 
   loadCanvas() {
-    let previous = this.cropperHistory.pop();
+    this.cropperHistory.pop();
+    let previous = this.cropperHistory[this.cropperHistory.length - 1];
     this.setUndoBtn();
     console.log(this.cropperHistory);
     return previous;
   }
 
   applyCrop() {
-    let currentCanvas = this.cropper.getCroppedCanvas({
+    let nextCanvas = this.cropper.getCroppedCanvas({
       minWidth: 256,
       minHeight: 256,
       maxWidth: 4096,
       maxHeight: 4096,
     });
 
-    this.saveCanvas(currentCanvas);
-    this.canvasReplace(currentCanvas);
+    this.saveCanvas(nextCanvas);
+    this.canvasReplace(nextCanvas);
   }
 
   undoCrop() {
+    console.log(this.cropperHistory);
     if (this.cropperHistory.length === 1) {
       this.canvasReplace(this.initialCanvas);
+      this.setUndoBtn();
+    } else if (this.cropperHistory.length === 2) {
+      this.cropperHistory.pop();
+      this.canvasReplace(this.initialCanvas);
+      this.setUndoBtn();
     } else {
       let previous = this.loadCanvas();
       this.canvasReplace(previous);
