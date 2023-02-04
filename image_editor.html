@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./image_editor/cropperjs/cropper.css" />
+    <link rel="stylesheet" href="./image_editor/style.css" />
+    <title>Image Editor</title>
+  </head>
+
+  <body>
+    <div class="main-container"></div>
+
+    <div class="controls-container">
+      <input
+        type="file"
+        id="upload-input"
+        accept="image/jpeg, image/png, image/jpg"
+        hidden
+      />
+      <label for="upload-input" id="upload-btn" class="upload-btn"
+        >Upload</label
+      >
+
+      <div class="filters-controls">
+        <h3>Filters Sliders</h3>
+        <div class="filter-range-slider">
+          <input type="range" value="100" min="0" max="200" id="brightness" />
+          <label for="brightness">Brightness</label>
+        </div>
+        <div class="filter-range-slider">
+          <input type="range" value="100" min="0" max="200" id="contrast" />
+          <label for="contrast">Contrast</label>
+        </div>
+        <div class="filter-range-slider">
+          <input type="range" value="100" min="0" max="200" id="saturation" />
+          <label for="saturation">Saturation</label>
+        </div>
+        <div class="filter-range-slider">
+          <input type="range" value="0" min="0" max="100" id="inversion" />
+          <label for="inversion">Inversion</label>
+        </div>
+        <div class="filter-range-slider">
+          <input type="range" value="0" min="0" max="20" id="blur" />
+          <label for="blur">Blur</label>
+        </div>
+        <div class="filter-range-slider">
+          <input type="range" value="0" min="0" max="360" id="hue" />
+          <label for="hue">Hue</label>
+        </div>
+      </div>
+
+      <div class="cropper-controls">
+        <button id="cropper-clear-btn">Crop-mode off</button>
+        <button id="cropper-crop-btn">Crop-mode on</button>
+        <button id="cropper-disable-btn">Disable</button>
+        <button id="cropper-enable-btn">Enable</button>
+        <button id="cropper-destroy-btn">DESTROY</button>
+        <button id="cropper-rotate-right-btn">Rotate Right</button>
+        <button id="cropper-rotate-left-btn">Rotate Left</button>
+        <button id="cropper-reflect-y-btn">Reflect Y</button>
+        <button id="cropper-reflect-x-btn">Reflect X</button>
+        <button id="cropper-apply-btn">Apply Crop</button>
+        <button id="cropper-download-btn">Download</button>
+        <input
+          type="range"
+          value="0"
+          min="-180"
+          max="180"
+          id="cropper-rotation"
+        />
+        <label for="cropper-rotation">Rotation deg</label>
+        <button id="cropper-undo-btn">Undo</button>
+      </div>
+    </div>
+
+    <!-- <div class="buttons-container">
+    <button class="zoom-in-sbtn">Zoom-in</button>
+    <button class="zoom-out-sbtn">Zoom out</button>
+    <button class="rotate-left-sbtn">Rotate Left</button>
+    <button class="rotate-right-sbtn">Rotate Right</button>
+    <button class="flip-x-sbtn">Flip-x</button>
+    <button class="flip-y-sbtn">Flip-y</button>
+    <button class="move-1-sbtn">Move-1</button>
+    <button class="move-2-sbtn">Move-2</button>
+    <button class="move-3-sbtn">Move-3</button>
+    <button class="move-4-sbtn">Move-4</button>
+    <button class="aspect-ratio-sbtn">Aspect Ratio</button>
+    <button class="free-ratio-sbtn">Free Ratio</button>
+    <button class="clear-sbtn">Clear</button>
+    <button class="crop-sbtn">Crop</button>
+    <button class="lock-sbtn">lock</button>
+    <button class="unlock-sbtn">unlock</button>
+    <button class="drag-sbtn">drag</button>
+    <button class="drag-move-sbtn">drag-move</button>
+    <button class="action-1-sbtn">Download</button>
+    <button class="replace-sbtn">Replace</button>
+    <button class="get-data-sbtn">Get Data</button>
+    <button class="set-data-sbtn">Set Data</button>
+  </div> -->
+
+    <!-- Cropper -->
+    <!-- <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.js"
+      integrity="sha512-LjPH94gotDTvKhoxqvR5xR2Nur8vO5RKelQmG52jlZo7SwI5WLYwDInPn1n8H9tR0zYqTqfNxWszUEy93cHHwg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script> -->
+
+    <script type="module" src="./image_editor/script.js"></script>
+    <!-- <script src="./image_editor/script2.js"></script> -->
+  </body>
+</html>
