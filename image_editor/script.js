@@ -20,14 +20,14 @@ class ImageEditor {
     this.blob = URL.createObjectURL(imageFile);
     this.croppersCounter = 0;
 
-    this.initalCropperState;
-    this.croppersHistoryStates = [];
+    this.initialCanvas;
+    this.cropperHistory = [];
 
     // Init cropper
     this.cropper = new Cropper(this.initImageDOM(this.blob), {
       viewMode: 2,
       dragMode: "none",
-      modal: true,
+      modal: false,
       background: false,
       autoCrop: false,
       ready: () => {
@@ -47,17 +47,16 @@ class ImageEditor {
           this.addCropperEvents();
         }
 
-        if (!this.initalCropperState) {
-          this.initalCropperState = this.cropper.getCroppedCanvas({
+        // Save initial canvas in history
+        if (!this.initialCanvas) {
+          this.initialCanvas = this.cropper.getCroppedCanvas({
             minWidth: 256,
             minHeight: 256,
             maxWidth: 4096,
             maxHeight: 4096,
           });
-          cropperUndoBtn.disabled = true;
-
-          this.croppersHistoryStates.push(this.initalCropperState);
-          console.log(this.croppersHistoryStates);
+          this.cropperHistory.push(this.initialCanvas);
+          this.setUndoBtn();
         }
       },
       zoom: () => {
@@ -112,28 +111,64 @@ class ImageEditor {
     return imageElement;
   }
 
-  addToHistory() {
-    this.croppersHistoryStates.push(
-      this.cropper.getCroppedCanvas({
-        minWidth: 256,
-        minHeight: 256,
-        maxWidth: 4096,
-        maxHeight: 4096,
-      })
-    );
-
-    if (this.croppersHistoryStates.length > 1) {
+  setUndoBtn() {
+    if (this.cropperHistory.length > 1) {
       cropperUndoBtn.disabled = false;
+    } else {
+      cropperUndoBtn.disabled = true;
     }
-
-    console.log(`Added. Applied count: ${this.croppersHistoryStates.length}`);
   }
 
-  retrieveHistoryState() {
-    let previous = this.croppersHistoryStates.pop();
-    console.log(`Removed. Applied count: ${this.croppersHistoryStates.length}`);
+  saveCanvas(canvas) {
+    this.cropperHistory.push(canvas);
+    this.setUndoBtn();
+    console.log(this.cropperHistory);
+  }
 
+  loadCanvas() {
+    let previous = this.cropperHistory.pop();
+    this.setUndoBtn();
+    console.log(this.cropperHistory);
     return previous;
+  }
+
+  applyCrop() {
+    let currentCanvas = this.cropper.getCroppedCanvas({
+      minWidth: 256,
+      minHeight: 256,
+      maxWidth: 4096,
+      maxHeight: 4096,
+    });
+
+    this.saveCanvas(currentCanvas);
+    this.canvasReplace(currentCanvas);
+  }
+
+  undoCrop() {
+    if (this.cropperHistory.length === 1) {
+      this.canvasReplace(this.initialCanvas);
+    } else {
+      let previous = this.loadCanvas();
+      this.canvasReplace(previous);
+    }
+  }
+
+  canvasReplace(canvas) {
+    canvas.toBlob(
+      (blob) => {
+        let newImage = new Image();
+        let url = URL.createObjectURL(blob);
+        newImage.src = url;
+
+        // newImage.onload = () => {
+        //   URL.revokeObjectURL(url);
+        // };
+
+        this.cropper.replace(newImage.src);
+      },
+      "image/jpeg",
+      1
+    );
   }
 
   addFiltersEvents() {
@@ -145,17 +180,6 @@ class ImageEditor {
         this.applyFilters(this.croppedBox);
       });
     });
-  }
-
-  applyFilters(element) {
-    element.style.filter = `
-  brightness(${this.filtersState.brightness}%) 
-  contrast(${this.filtersState.contrast}%) 
-  saturate(${this.filtersState.saturation}%) 
-  invert(${this.filtersState.inversion}%) 
-  blur(${this.filtersState.blur}px) 
-  hue-rotate(${this.filtersState.hue}deg)
-      `;
   }
 
   addCropperEvents() {
@@ -200,60 +224,11 @@ class ImageEditor {
     });
 
     cropperBtnApply.addEventListener("click", () => {
-      this.cropper
-        .getCroppedCanvas({
-          minWidth: 256,
-          minHeight: 256,
-          maxWidth: 4096,
-          maxHeight: 4096,
-        })
-        .toBlob(
-          (blob) => {
-            // let reader = new FileReader();
-            // reader.readAsDataURL(blob);
-            // reader.onloadend = () => {
-            //   let file = reader.result;
-            //   const loadedBlob = new Blob([new Uint8Array(file)], {
-            //     type: "image/jpeg",
-            //   });
-            //   let url = URL.createObjectURL(loadedBlob);
-            //   this.cropper.replace(url);
-            // let src = URL.createObjectURL(reader.result);
-            // };
-
-            // this.cropper.replace(src);
-
-            let newImage = new Image();
-            let url = URL.createObjectURL(blob);
-            newImage.src = url;
-
-            newImage.onload = () => {
-              console.log("loaded");
-              URL.revokeObjectURL(url);
-            };
-
-            this.cropper.replace(newImage.src);
-          },
-          "image/jpeg",
-          1
-        );
-
-      this.addToHistory();
-      console.log(this.croppersHistoryStates);
+      this.applyCrop();
     });
 
     cropperUndoBtn.addEventListener("click", () => {
-      if (this.croppersHistoryStates.length === 1) {
-        this.initalCropperState.toBlob((blob) => {
-          this.cropper.replace(URL.createObjectURL(blob));
-          cropperUndoBtn.disabled = true;
-        });
-      } else {
-        let previous = this.retrieveHistoryState();
-        previous.toBlob((blob) => {
-          this.cropper.replace(URL.createObjectURL(blob));
-        });
-      }
+      this.undoCrop();
     });
 
     cropperBtnDownload.addEventListener("click", () => {
@@ -281,6 +256,17 @@ class ImageEditor {
         a.click();
       });
     });
+  }
+
+  applyFilters(element) {
+    element.style.filter = `
+  brightness(${this.filtersState.brightness}%) 
+  contrast(${this.filtersState.contrast}%) 
+  saturate(${this.filtersState.saturation}%) 
+  invert(${this.filtersState.inversion}%) 
+  blur(${this.filtersState.blur}px) 
+  hue-rotate(${this.filtersState.hue}deg)
+      `;
   }
 }
 
