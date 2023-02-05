@@ -16,14 +16,16 @@ class ImageEditor {
       blur: 0,
       hue: 0,
     };
+    this.createFiltersControls();
 
     this.blob = URL.createObjectURL(imageFile);
     this.croppersCounter = 0;
 
+    // Init cropper
+    this.createCropperControls();
     this.initialCanvas;
     this.cropperHistory = [];
 
-    // Init cropper
     this.cropper = new Cropper(this.initImageDOM(this.blob), {
       viewMode: 2,
       dragMode: "none",
@@ -112,25 +114,132 @@ class ImageEditor {
     return imageElement;
   }
 
+  createCropperControls() {
+    // Add buttons to DOM
+    cropperControlsContainer.innerHTML = `
+      <button id="cropper-clear-btn">Crop-mode off</button>
+      <button id="cropper-crop-btn">Crop-mode on</button>
+      <button id="cropper-disable-btn">Disable</button>
+      <button id="cropper-enable-btn">Enable</button>
+      <button id="cropper-destroy-btn">DESTROY</button>
+      <button id="cropper-rotate-right-btn">Rotate Right</button>
+      <button id="cropper-rotate-left-btn">Rotate Left</button>
+      <button id="cropper-reflect-y-btn">Reflect Y</button>
+      <button id="cropper-reflect-x-btn">Reflect X</button>
+      <button id="cropper-apply-btn">Apply Crop</button>
+      <button id="cropper-download-btn">Download</button>
+      <input type="range" value="0" min="-180" max="180" id="cropper-rotation" />
+      <label for="cropper-rotation">Rotation deg</label>
+      <button id="cropper-reset-rotation-btn">Reset</button>
+      <button id="cropper-undo-btn">Undo</button>
+    `;
+
+    // Init buttons
+    this.cropperBtnCrop =
+      cropperControlsContainer.querySelector("#cropper-crop-btn");
+    this.cropperBtnClear =
+      cropperControlsContainer.querySelector("#cropper-clear-btn");
+    this.cropperBtnApply =
+      cropperControlsContainer.querySelector("#cropper-apply-btn");
+    this.cropperBtnDownload = cropperControlsContainer.querySelector(
+      "#cropper-download-btn"
+    );
+    this.cropperBtnDisable = cropperControlsContainer.querySelector(
+      "#cropper-disable-btn"
+    );
+    this.cropperBtnEnable = cropperControlsContainer.querySelector(
+      "#cropper-enable-btn"
+    );
+    this.cropperBtnDestroy = cropperControlsContainer.querySelector(
+      "#cropper-destroy-btn"
+    );
+    this.cropperBtnRotateRight = cropperControlsContainer.querySelector(
+      "#cropper-rotate-right-btn"
+    );
+    this.cropperBtnRotateLeft = cropperControlsContainer.querySelector(
+      "#cropper-rotate-left-btn"
+    );
+    this.cropperBtnReflectX = cropperControlsContainer.querySelector(
+      "#cropper-reflect-x-btn"
+    );
+    this.cropperBtnReflectY = cropperControlsContainer.querySelector(
+      "#cropper-reflect-y-btn"
+    );
+    this.cropperRotationSlider =
+      cropperControlsContainer.querySelector("#cropper-rotation");
+    this.cropperRotationSliderReset = cropperControlsContainer.querySelector(
+      "#cropper-reset-rotation-btn"
+    );
+    this.cropperUndoBtn =
+      cropperControlsContainer.querySelector("#cropper-undo-btn");
+  }
+
+  createFiltersControls() {
+    filterControlsContainer.innerHTML = `
+     <h3>Filters Sliders</h3>
+      <div class="filter-range-slider">
+        <input type="range" value="100" min="0" max="200" id="brightness" />
+        <label for="brightness">Brightness</label>
+      </div>
+      <div class="filter-range-slider">
+        <input type="range" value="100" min="0" max="200" id="contrast" />
+        <label for="contrast">Contrast</label>
+      </div>
+      <div class="filter-range-slider">
+        <input type="range" value="100" min="0" max="200" id="saturation" />
+        <label for="saturation">Saturation</label>
+      </div>
+      <div class="filter-range-slider">
+        <input type="range" value="0" min="0" max="100" id="inversion" />
+        <label for="inversion">Inversion</label>
+      </div>
+      <div class="filter-range-slider">
+        <input type="range" value="0" min="0" max="20" id="blur" />
+        <label for="blur">Blur</label>
+      </div>
+      <div class="filter-range-slider">
+        <input type="range" value="0" min="0" max="360" id="hue" />
+        <label for="hue">Hue</label>
+      </div>
+      <button id="reset-filters">Reset Filters</button>
+    `;
+
+    this.filtersSliders = filterControlsContainer.querySelectorAll(
+      ".filter-range-slider input"
+    );
+    this.resetFiltersBtn =
+      filterControlsContainer.querySelector("#reset-filters");
+  }
+
+  applyFilters(element) {
+    element.style.filter = `
+  brightness(${this.filtersState.brightness}%) 
+  contrast(${this.filtersState.contrast}%) 
+  saturate(${this.filtersState.saturation}%) 
+  invert(${this.filtersState.inversion}%) 
+  blur(${this.filtersState.blur}px) 
+  hue-rotate(${this.filtersState.hue}deg)
+      `;
+  }
+
   setUndoBtn() {
     if (this.cropperHistory.length === 1) {
-      cropperUndoBtn.disabled = true;
+      this.cropperUndoBtn.disabled = true;
     } else {
-      cropperUndoBtn.disabled = false;
+      this.cropperUndoBtn.disabled = false;
     }
   }
 
   saveCanvas(canvas) {
     this.cropperHistory.push(canvas);
     this.setUndoBtn();
-    console.log(this.cropperHistory);
   }
 
   loadCanvas() {
     this.cropperHistory.pop();
     let previous = this.cropperHistory[this.cropperHistory.length - 1];
     this.setUndoBtn();
-    console.log(this.cropperHistory);
+
     return previous;
   }
 
@@ -168,9 +277,9 @@ class ImageEditor {
         let url = URL.createObjectURL(blob);
         newImage.src = url;
 
-        // newImage.onload = () => {
-        //   URL.revokeObjectURL(url);
-        // };
+        newImage.onload = () => {
+          URL.revokeObjectURL(url);
+        };
 
         this.cropper.replace(newImage.src);
       },
@@ -179,71 +288,11 @@ class ImageEditor {
     );
   }
 
-  addFiltersEvents() {
-    filtersSliders.forEach((filterRange) => {
-      filterRange.addEventListener("input", (e) => {
-        this.filtersState[e.target.id] = e.target.value;
+  downloadImage() {
+    let canvas = this.cropper.getCroppedCanvas();
+    const ctx = canvas.getContext("2d");
 
-        this.applyFilters(this.previewImage);
-        this.applyFilters(this.croppedBox);
-      });
-    });
-  }
-
-  addCropperEvents() {
-    cropperBtnCrop.addEventListener("click", () => {
-      this.cropper.crop();
-    });
-
-    cropperBtnClear.addEventListener("click", () => {
-      this.cropper.clear();
-    });
-
-    cropperBtnEnable.addEventListener("click", () => {
-      this.cropper.enable();
-    });
-
-    cropperBtnDisable.addEventListener("click", () => {
-      this.cropper.disable();
-    });
-
-    cropperBtnDestroy.addEventListener("click", () => {
-      this.cropper.destroy();
-    });
-
-    cropperBtnRotateRight.addEventListener("click", () => {
-      this.cropper.rotate(90);
-    });
-
-    cropperBtnRotateLeft.addEventListener("click", () => {
-      this.cropper.rotate(-90);
-    });
-
-    cropperBtnReflectX.addEventListener("click", () => {
-      this.cropper.scaleX(this.cropper.imageData.scaleX === -1 ? 1 : -1);
-    });
-
-    cropperBtnReflectY.addEventListener("click", () => {
-      this.cropper.scaleY(this.cropper.imageData.scaleY === -1 ? 1 : -1);
-    });
-
-    cropperRotationSlider.addEventListener("input", (e) => {
-      this.cropper.rotateTo(e.target.value);
-    });
-
-    cropperBtnApply.addEventListener("click", () => {
-      this.applyCrop();
-    });
-
-    cropperUndoBtn.addEventListener("click", () => {
-      this.undoCrop();
-    });
-
-    cropperBtnDownload.addEventListener("click", () => {
-      let canvas = this.cropper.getCroppedCanvas();
-      const ctx = canvas.getContext("2d");
-
-      ctx.filter = `
+    ctx.filter = `
       brightness(${this.filtersState.brightness}%) 
       contrast(${this.filtersState.contrast}%) 
       saturate(${this.filtersState.saturation}%) 
@@ -251,30 +300,102 @@ class ImageEditor {
       blur(${this.filtersState.blur}px) 
       hue-rotate(${this.filtersState.hue}deg)`;
 
-      ctx.drawImage(canvas, 0, 0);
-      // let result = canvas
-      //   .toDataURL("image/jpeg")
-      // window.location.href = result;
+    ctx.drawImage(canvas, 0, 0);
 
-      canvas.toBlob((blob) => {
-        let downloadUrl = window.URL.createObjectURL(blob);
-        let a = document.createElement("a");
-        a.href = downloadUrl;
-        a.download = "cropper-img.jpg";
-        a.click();
+    let result = canvas.toDataURL("image/jpeg");
+    const createEl = document.createElement("a");
+    createEl.href = result;
+    createEl.download = "download-this-canvas";
+    createEl.click();
+    createEl.remove();
+  }
+
+  addFiltersEvents() {
+    this.filtersSliders.forEach((filterRange) => {
+      filterRange.addEventListener("input", (e) => {
+        this.filtersState[e.target.id] = e.target.value;
+
+        this.applyFilters(this.previewImage);
+        this.applyFilters(this.croppedBox);
       });
+    });
+
+    this.resetFiltersBtn.addEventListener("click", () => {
+      this.filtersSliders.forEach((filterRange) => {
+        if (
+          filterRange.id === "brightness" ||
+          filterRange.id === "saturation" ||
+          filterRange.id === "contrast"
+        ) {
+          filterRange.value = 100;
+          this.filtersState[filterRange.id] = 100;
+        } else {
+          filterRange.value = 0;
+          this.filtersState[filterRange.id] = 0;
+        }
+      });
+      this.applyFilters(this.previewImage);
+      this.applyFilters(this.croppedBox);
     });
   }
 
-  applyFilters(element) {
-    element.style.filter = `
-  brightness(${this.filtersState.brightness}%) 
-  contrast(${this.filtersState.contrast}%) 
-  saturate(${this.filtersState.saturation}%) 
-  invert(${this.filtersState.inversion}%) 
-  blur(${this.filtersState.blur}px) 
-  hue-rotate(${this.filtersState.hue}deg)
-      `;
+  addCropperEvents() {
+    this.cropperBtnCrop.addEventListener("click", () => {
+      this.cropper.crop();
+    });
+
+    this.cropperBtnClear.addEventListener("click", () => {
+      this.cropper.clear();
+    });
+
+    this.cropperBtnEnable.addEventListener("click", () => {
+      this.cropper.enable();
+    });
+
+    this.cropperBtnDisable.addEventListener("click", () => {
+      this.cropper.disable();
+    });
+
+    this.cropperBtnDestroy.addEventListener("click", () => {
+      this.cropper.destroy();
+    });
+
+    this.cropperBtnRotateRight.addEventListener("click", () => {
+      this.cropper.rotate(90);
+    });
+
+    this.cropperBtnRotateLeft.addEventListener("click", () => {
+      this.cropper.rotate(-90);
+    });
+
+    this.cropperBtnReflectX.addEventListener("click", () => {
+      this.cropper.scaleX(this.cropper.imageData.scaleX === -1 ? 1 : -1);
+    });
+
+    this.cropperBtnReflectY.addEventListener("click", () => {
+      this.cropper.scaleY(this.cropper.imageData.scaleY === -1 ? 1 : -1);
+    });
+
+    this.cropperRotationSlider.addEventListener("input", (e) => {
+      this.cropper.rotateTo(e.target.value);
+    });
+
+    this.cropperRotationSliderReset.addEventListener("click", () => {
+      this.cropper.rotateTo(0);
+      this.cropperRotationSlider.value = 0;
+    });
+
+    this.cropperBtnApply.addEventListener("click", () => {
+      this.applyCrop();
+    });
+
+    this.cropperUndoBtn.addEventListener("click", () => {
+      this.undoCrop();
+    });
+
+    this.cropperBtnDownload.addEventListener("click", () => {
+      this.downloadImage();
+    });
   }
 }
 
@@ -282,47 +403,17 @@ class ImageEditor {
 const parentElement = document.querySelector(".main-container");
 const uploadInput = document.querySelector("#upload-input");
 
-// Filters sliders
-const filtersSliders = document.querySelectorAll(".filter-range-slider input");
+// Filters controls container
+const filterControlsContainer = document.querySelector(".filters-controls");
 
-// Cropper operations buttons
-const cropperBtnCrop = document.querySelector("#cropper-crop-btn");
-const cropperBtnClear = document.querySelector("#cropper-clear-btn");
-const cropperBtnApply = document.querySelector("#cropper-apply-btn");
-const cropperBtnDownload = document.querySelector("#cropper-download-btn");
-const cropperBtnDisable = document.querySelector("#cropper-disable-btn");
-const cropperBtnEnable = document.querySelector("#cropper-enable-btn");
-const cropperBtnDestroy = document.querySelector("#cropper-destroy-btn");
-const cropperBtnRotateRight = document.querySelector(
-  "#cropper-rotate-right-btn"
-);
-const cropperBtnRotateLeft = document.querySelector("#cropper-rotate-left-btn");
-const cropperBtnReflectX = document.querySelector("#cropper-reflect-x-btn");
-const cropperBtnReflectY = document.querySelector("#cropper-reflect-y-btn");
-const cropperRotationSlider = document.querySelector("#cropper-rotation");
-const cropperUndoBtn = document.querySelector("#cropper-undo-btn");
+// Cropper controls container
+const cropperControlsContainer = document.querySelector(".cropper-controls");
 
 let imageEditor;
 
 uploadInput.addEventListener("change", (e) => {
   if (e.target.files.length !== 1) return;
 
-  resetFiltersInputs();
   parentElement.innerHTML = "";
-
   imageEditor = new ImageEditor(parentElement, e.target.files[0]);
 });
-
-function resetFiltersInputs() {
-  filtersSliders.forEach((filterRange) => {
-    if (
-      filterRange.id === "brightness" ||
-      filterRange.id === "saturation" ||
-      filterRange.id === "contrast"
-    ) {
-      filterRange.value = 100;
-    } else {
-      filterRange.value = 0;
-    }
-  });
-}

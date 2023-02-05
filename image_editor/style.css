@@ -58,6 +58,8 @@ body {
   width: 100%;
   background-color: lightgray;
   display: flex;
+  flex: 3 33%;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-around;
 }
@@ -65,7 +67,7 @@ body {
 .cropper-controls {
   display: flex;
   flex-wrap: wrap;
-  width: 35%;
+  width: 25%;
 }
 
 .upload-btn {
