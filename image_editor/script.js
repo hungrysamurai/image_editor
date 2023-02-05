@@ -34,10 +34,8 @@ class ImageEditor {
       autoCrop: false,
       ready: () => {
         this.previewImage = this.cropper.image;
-        this.croppedBox = this.cropper.viewBox;
-
-        // Apply filters to preview according to filtersState
         this.applyFilters(this.previewImage);
+        this.croppedBox = this.cropper.viewBox.querySelector("img");
         this.applyFilters(this.croppedBox);
 
         // Capture initial canvas width to disable moving if fully zoomed out
@@ -121,7 +119,11 @@ class ImageEditor {
       <button id="cropper-crop-btn">Crop-mode on</button>
       <button id="cropper-disable-btn">Disable</button>
       <button id="cropper-enable-btn">Enable</button>
-      <button id="cropper-destroy-btn">DESTROY</button>
+      <button id="cropper-aspect-square-btn">Square</button>
+      <button id="cropper-aspect-3-4-btn">3:4</button>
+      <button id="cropper-aspect-4-3-btn">3:4</button>
+      <button id="cropper-aspect-16-9-btn">16:9</button>
+      <button id="cropper-aspect-free-btn">Free Ratio</button>
       <button id="cropper-rotate-right-btn">Rotate Right</button>
       <button id="cropper-rotate-left-btn">Rotate Left</button>
       <button id="cropper-reflect-y-btn">Reflect Y</button>
@@ -150,8 +152,20 @@ class ImageEditor {
     this.cropperBtnEnable = cropperControlsContainer.querySelector(
       "#cropper-enable-btn"
     );
-    this.cropperBtnDestroy = cropperControlsContainer.querySelector(
-      "#cropper-destroy-btn"
+    this.cropperBtnAspectSquare = cropperControlsContainer.querySelector(
+      "#cropper-aspect-square-btn"
+    );
+    this.cropperBtnAspect34 = cropperControlsContainer.querySelector(
+      "#cropper-aspect-3-4-btn"
+    );
+    this.cropperBtnAspect43 = cropperControlsContainer.querySelector(
+      "#cropper-aspect-4-3-btn"
+    );
+    this.cropperBtnAspect169 = cropperControlsContainer.querySelector(
+      "#cropper-aspect-16-9-btn"
+    );
+    this.cropperBtnAspectFree = cropperControlsContainer.querySelector(
+      "#cropper-aspect-free-btn"
     );
     this.cropperBtnRotateRight = cropperControlsContainer.querySelector(
       "#cropper-rotate-right-btn"
@@ -253,10 +267,11 @@ class ImageEditor {
 
     this.saveCanvas(nextCanvas);
     this.canvasReplace(nextCanvas);
+
+    this.cropperRotationSlider.value = 0;
   }
 
   undoCrop() {
-    console.log(this.cropperHistory);
     if (this.cropperHistory.length === 1) {
       this.canvasReplace(this.initialCanvas);
       this.setUndoBtn();
@@ -268,6 +283,7 @@ class ImageEditor {
       let previous = this.loadCanvas();
       this.canvasReplace(previous);
     }
+    this.cropperRotationSlider.value = 0;
   }
 
   canvasReplace(canvas) {
@@ -277,9 +293,9 @@ class ImageEditor {
         let url = URL.createObjectURL(blob);
         newImage.src = url;
 
-        newImage.onload = () => {
-          URL.revokeObjectURL(url);
-        };
+        // newImage.onload = () => {
+        //   URL.revokeObjectURL(url);
+        // };
 
         this.cropper.replace(newImage.src);
       },
@@ -356,8 +372,22 @@ class ImageEditor {
       this.cropper.disable();
     });
 
-    this.cropperBtnDestroy.addEventListener("click", () => {
-      this.cropper.destroy();
+    this.cropperBtnAspectSquare.addEventListener("click", () => {
+      this.cropper.setAspectRatio(1);
+    });
+
+    this.cropperBtnAspect34.addEventListener("click", () => {
+      this.cropper.setAspectRatio(0.75);
+    });
+
+    this.cropperBtnAspect43.addEventListener("click", () => {
+      this.cropper.setAspectRatio(1.333333);
+    });
+    this.cropperBtnAspect169.addEventListener("click", () => {
+      this.cropper.setAspectRatio(1.777777);
+    });
+    this.cropperBtnAspectFree.addEventListener("click", () => {
+      this.cropper.setAspectRatio(0);
     });
 
     this.cropperBtnRotateRight.addEventListener("click", () => {
