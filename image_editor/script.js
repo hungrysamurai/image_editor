@@ -123,6 +123,7 @@ class ImageEditor {
       <button id="cropper-aspect-3-4-btn">3:4</button>
       <button id="cropper-aspect-4-3-btn">3:4</button>
       <button id="cropper-aspect-16-9-btn">16:9</button>
+      <button id="cropper-aspect-9-16-btn">9:16</button>
       <button id="cropper-aspect-free-btn">Free Ratio</button>
       <button id="cropper-rotate-right-btn">Rotate Right</button>
       <button id="cropper-rotate-left-btn">Rotate Left</button>
@@ -163,6 +164,9 @@ class ImageEditor {
     );
     this.cropperBtnAspect169 = cropperControlsContainer.querySelector(
       "#cropper-aspect-16-9-btn"
+    );
+    this.cropperBtnAspect916 = cropperControlsContainer.querySelector(
+      "#cropper-aspect-9-16-btn"
     );
     this.cropperBtnAspectFree = cropperControlsContainer.querySelector(
       "#cropper-aspect-free-btn"
@@ -373,20 +377,29 @@ class ImageEditor {
     });
 
     this.cropperBtnAspectSquare.addEventListener("click", () => {
+      this.cropper.crop();
       this.cropper.setAspectRatio(1);
     });
 
     this.cropperBtnAspect34.addEventListener("click", () => {
+      this.cropper.crop();
       this.cropper.setAspectRatio(0.75);
     });
 
     this.cropperBtnAspect43.addEventListener("click", () => {
+      this.cropper.crop();
       this.cropper.setAspectRatio(1.333333);
     });
     this.cropperBtnAspect169.addEventListener("click", () => {
+      this.cropper.crop();
       this.cropper.setAspectRatio(1.777777);
     });
+    this.cropperBtnAspect916.addEventListener("click", () => {
+      this.cropper.crop();
+      this.cropper.setAspectRatio(0.5625);
+    });
     this.cropperBtnAspectFree.addEventListener("click", () => {
+      this.cropper.crop();
       this.cropper.setAspectRatio(0);
     });
 
