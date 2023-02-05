@@ -8,6 +8,9 @@ class ImageEditor {
     this.croppedBox;
     this.previewImage;
 
+    this.paintingMode = false;
+    this.paintingCanvas;
+
     this.filtersState = {
       brightness: 100,
       contrast: 100,
@@ -70,13 +73,12 @@ class ImageEditor {
     });
 
     this.addFiltersEvents();
+    this.addPaintingEvents();
   }
 
   initImageDOM(blob) {
     const imageContainer = document.createElement("div");
     imageContainer.classList.add("image-container");
-
-    // const canvasElement = document.createElement("canvas");
 
     const imageElement = document.createElement("img");
     imageElement.classList.add("image-element");
@@ -90,18 +92,6 @@ class ImageEditor {
       // Set asp-ratio of container
       imageContainer.style.aspectRatio = `${aspectRatio} / 1`;
       this.aspectRatio = aspectRatio;
-
-      // canvasElement.height = imageContainer.offsetHeight;
-      // canvasElement.width = imageContainer.offsetHeight * aspectRatio;
-
-      // const ctx = canvasElement.getContext("2d");
-      // ctx.drawImage(
-      //   imageElement,
-      //   0,
-      //   0,
-      //   canvasElement.width,
-      //   canvasElement.height,
-      // );
     };
 
     // imageContainer.appendChild(canvasElement);
@@ -330,6 +320,118 @@ class ImageEditor {
     createEl.remove();
   }
 
+  createPaintingCanvas() {
+    if (this.paintingCanvas) return;
+    // Disable cropper
+    this.cropper.clear();
+    this.cropper.disable();
+
+    // Create canvas element
+    let paintingCanvas = document.createElement("canvas");
+
+    paintingCanvas.style.position = "absolute";
+    paintingCanvas.style.zIndex = 1;
+    paintingCanvas.style.overflow = "hidden";
+    paintingCanvas.style.transform = `rotate(${this.cropper.imageData.rotate}deg)`;
+
+    paintingCanvas.height = this.previewImage.height;
+    paintingCanvas.width = this.previewImage.width;
+
+    const ctx = paintingCanvas.getContext("2d");
+
+    this.parentContainer.insertAdjacentElement("afterbegin", paintingCanvas);
+
+    this.paintingCanvas = paintingCanvas;
+
+    let color = "#000000";
+    let size = 10;
+
+    let isPressed = false;
+    let isEraser = false;
+    let x;
+    let y;
+
+    colorPicker.value = color;
+    brushSizeEl.textContent = size;
+
+    colorPicker.addEventListener("change", (e) => (color = e.target.value));
+
+    increaseBrushSize.addEventListener("click", () => {
+      size += 5;
+      if (size > 50) {
+        size = 50;
+      }
+      brushSizeEl.textContent = size;
+    });
+
+    decreaseBrushSize.addEventListener("click", () => {
+      size -= 5;
+      if (size < 5) {
+        size = 5;
+      }
+      brushSizeEl.textContent = size;
+    });
+
+    clearPaintingCanvasBtn.addEventListener("click", (e) => {
+      ctx.clearRect(0, 0, paintingCanvas.width, paintingCanvas.height);
+    });
+
+    paintingCanvas.addEventListener("mousedown", (e) => {
+      isPressed = true;
+
+      x = e.offsetX;
+      y = e.offsetY;
+    });
+
+    paintingCanvas.addEventListener("mouseup", (e) => {
+      isPressed = false;
+
+      x = undefined;
+      y = undefined;
+    });
+
+    paintingCanvas.addEventListener("mousemove", (e) => {
+      if (isPressed) {
+        const x2 = e.offsetX;
+        const y2 = e.offsetY;
+        this.drawCircle(ctx, color, size, x2, y2);
+        this.drawLine(ctx, color, size, x, y, x2, y2);
+
+        x = x2;
+        y = y2;
+      }
+    });
+  }
+
+  drawCircle(ctx, color, size, x, y) {
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  drawLine(ctx, color, size, x1, y1, x2, y2) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = size * 2;
+    ctx.stroke();
+  }
+
+  addPaintingEvents() {
+    createPaintingCanvasBtn.addEventListener("click", () => {
+      this.createPaintingCanvas();
+    });
+    removePaintingCanvasBtn.addEventListener("click", () => {
+      if (!this.paintingCanvas) return;
+      this.paintingCanvas.remove();
+      this.paintingCanvas = undefined;
+
+      this.cropper.enable();
+    });
+  }
+
   addFiltersEvents() {
     this.filtersSliders.forEach((filterRange) => {
       filterRange.addEventListener("input", (e) => {
@@ -451,6 +553,22 @@ const filterControlsContainer = document.querySelector(".filters-controls");
 
 // Cropper controls container
 const cropperControlsContainer = document.querySelector(".cropper-controls");
+
+// Painting Controls container
+const createPaintingCanvasBtn = document.querySelector(
+  "#create-drawing-canvas"
+);
+const removePaintingCanvasBtn = document.querySelector(
+  "#remove-drawing-canvas"
+);
+const applyPaintingCanvasBtn = document.querySelector("#apply-drawing-canvas");
+const clearPaintingCanvasBtn = document.querySelector("#clear-drawing-canvas");
+const colorPicker = document.querySelector("#color-picker");
+const increaseBrushSize = document.querySelector("#increase-brush");
+const decreaseBrushSize = document.querySelector("#decrease-brush");
+const brushSizeEl = document.querySelector("#size-brush");
+const brushModeBtn = document.querySelector("#painting-brush");
+const eraserModeBtn = document.querySelector("#eraser-brush");
 
 let imageEditor;
 
