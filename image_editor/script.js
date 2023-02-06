@@ -8,7 +8,6 @@ class ImageEditor {
     this.croppedBox;
     this.previewImage;
 
-    this.paintingMode = false;
     this.paintingCanvas;
 
     this.filtersState = {
@@ -111,7 +110,7 @@ class ImageEditor {
       <button id="cropper-enable-btn">Enable</button>
       <button id="cropper-aspect-square-btn">Square</button>
       <button id="cropper-aspect-3-4-btn">3:4</button>
-      <button id="cropper-aspect-4-3-btn">3:4</button>
+      <button id="cropper-aspect-4-3-btn">4:3</button>
       <button id="cropper-aspect-16-9-btn">16:9</button>
       <button id="cropper-aspect-9-16-btn">9:16</button>
       <button id="cropper-aspect-free-btn">Free Ratio</button>
@@ -322,6 +321,7 @@ class ImageEditor {
 
   createPaintingCanvas() {
     if (this.paintingCanvas) return;
+
     // Disable cropper
     this.cropper.clear();
     this.cropper.disable();
@@ -329,6 +329,7 @@ class ImageEditor {
     // Create canvas element
     let paintingCanvas = document.createElement("canvas");
 
+    // Set canvas element styles
     paintingCanvas.style.position = "absolute";
     paintingCanvas.style.zIndex = 1;
     paintingCanvas.style.overflow = "hidden";
@@ -353,6 +354,14 @@ class ImageEditor {
 
     colorPicker.value = color;
     brushSizeEl.textContent = size;
+
+    brushModeBtn.addEventListener('click', () => {
+      isEraser = false;
+    })
+
+    eraserModeBtn.addEventListener('click', () => {
+      isEraser = true;
+    })
 
     colorPicker.addEventListener("change", (e) => (color = e.target.value));
 
@@ -392,6 +401,13 @@ class ImageEditor {
 
     paintingCanvas.addEventListener("mousemove", (e) => {
       if (isPressed) {
+
+        if (isEraser) {
+          ctx.globalCompositeOperation = "destination-out";
+        } else {
+          ctx.globalCompositeOperation = "source-over";
+        }
+
         const x2 = e.offsetX;
         const y2 = e.offsetY;
         this.drawCircle(ctx, color, size, x2, y2);
