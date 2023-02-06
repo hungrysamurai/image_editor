@@ -7,6 +7,7 @@ class ImageEditor {
     this.aspectRatio;
     this.croppedBox;
     this.previewImage;
+    this.zoomed;
 
     this.paintingCanvas;
 
@@ -37,8 +38,13 @@ class ImageEditor {
       ready: () => {
         this.previewImage = this.cropper.image;
         this.applyFilters(this.previewImage);
+
         this.croppedBox = this.cropper.viewBox.querySelector("img");
         this.applyFilters(this.croppedBox);
+
+        this.cropper.canvasData.top = 0;
+        console.log(this.cropper.getCanvasData());
+
 
         // Capture initial canvas width to disable moving if fully zoomed out
         this.cropper.zoomOutWidth = this.cropper.canvasData.width;
@@ -63,11 +69,19 @@ class ImageEditor {
         }
       },
       zoom: () => {
-        if (this.cropper.canvasData.width !== this.cropper.zoomOutWidth) {
+
+
+        if (Math.round(this.cropper.canvasData.width) !== parentContainer.clientWidth) {
+          this.zoomed = true;
           this.cropper.setDragMode("move");
         } else {
+          this.zoomed = false;
           this.cropper.setDragMode("none");
         }
+        // console.log(this.cropper.getCanvasData());
+        // console.log(this.cropper.canvasData);
+        // console.log(parentContainer.clientWidth);
+        // console.log(parentContainer.clientHeight);
       },
     });
 
@@ -124,6 +138,8 @@ class ImageEditor {
       <label for="cropper-rotation">Rotation deg</label>
       <button id="cropper-reset-rotation-btn">Reset</button>
       <button id="cropper-undo-btn">Undo</button>
+
+      <button id="cropper-set-btn">SET</button>
     `;
 
     // Init buttons
@@ -179,6 +195,8 @@ class ImageEditor {
     );
     this.cropperUndoBtn =
       cropperControlsContainer.querySelector("#cropper-undo-btn");
+
+    this.cropperSetBtn = cropperControlsContainer.querySelector("#cropper-set-btn");
   }
 
   createFiltersControls() {
@@ -297,17 +315,22 @@ class ImageEditor {
     );
   }
 
-  downloadImage() {
-    let canvas = this.cropper.getCroppedCanvas();
-    const ctx = canvas.getContext("2d");
-
-    ctx.filter = `
-      brightness(${this.filtersState.brightness}%) 
+  applyCanvasFilters() {
+    return `
+  brightness(${this.filtersState.brightness}%) 
       contrast(${this.filtersState.contrast}%) 
       saturate(${this.filtersState.saturation}%) 
       invert(${this.filtersState.inversion}%) 
       blur(${this.filtersState.blur}px) 
-      hue-rotate(${this.filtersState.hue}deg)`;
+      hue-rotate(${this.filtersState.hue}deg)
+  `
+  }
+
+  downloadImage() {
+    let canvas = this.cropper.getCroppedCanvas();
+    const ctx = canvas.getContext("2d");
+
+    ctx.filter = this.applyCanvasFilters();
 
     ctx.drawImage(canvas, 0, 0);
 
@@ -335,8 +358,17 @@ class ImageEditor {
     paintingCanvas.style.overflow = "hidden";
     paintingCanvas.style.transform = `rotate(${this.cropper.imageData.rotate}deg)`;
 
-    paintingCanvas.height = this.previewImage.height;
-    paintingCanvas.width = this.previewImage.width;
+    // paintingCanvas.height = this.previewImage.height;
+    // paintingCanvas.width = this.previewImage.width;
+    paintingCanvas.height = this.parentContainer.clientHeight;
+    paintingCanvas.width = this.parentContainer.clientWidth;
+    // if (!this.zoomed) {
+    //   paintingCanvas.height = this.previewImage.height;
+    //   paintingCanvas.width = this.previewImage.width;
+    // } else {
+    //   paintingCanvas.height = this.parentContainer.clientHeight;
+    //   paintingCanvas.width = this.parentContainer.clientWidth;
+    // }
 
     const ctx = paintingCanvas.getContext("2d");
 
@@ -435,10 +467,74 @@ class ImageEditor {
     ctx.stroke();
   }
 
+  applyPaintingCanvas() {
+    if (!this.paintingCanvas) return;
+
+    this.cropper.enable();
+    this.cropper.crop();
+
+    this.cropper.setCropBoxData({
+      left: 0,
+      top: 0,
+      width: this.parentContainer.clientWidth,
+      height: this.parentContainer.clientHeight
+    });
+
+    let baseCanvas = this.cropper.getCroppedCanvas({
+      minWidth: 256,
+      minHeight: 256,
+      maxWidth: 4096,
+      maxHeight: 4096,
+    });
+
+    let baseCtx = baseCanvas.getContext("2d");
+    baseCtx.filter = this.applyCanvasFilters();
+    baseCtx.drawImage(baseCanvas, 0, 0);
+
+    let merged = document.createElement('canvas');
+    merged.width = baseCanvas.width;
+    merged.height = baseCanvas.height;
+
+    const ctx = merged.getContext("2d");
+
+    ctx.drawImage(baseCanvas, 0, 0);
+    ctx.drawImage(this.paintingCanvas, 0, 0, baseCanvas.width, baseCanvas.height);
+
+
+    this.saveCanvas(merged);
+    this.canvasReplace(merged);
+
+    this.cropperRotationSlider.value = 0;
+    this.resetFilters();
+
+    this.paintingCanvas.remove();
+    this.paintingCanvas = undefined;
+
+    this.cropper.enable();
+
+  }
+
+  resetFilters() {
+    this.filtersSliders.forEach((filterRange) => {
+      if (
+        filterRange.id === "brightness" ||
+        filterRange.id === "saturation" ||
+        filterRange.id === "contrast"
+      ) {
+        filterRange.value = 100;
+        this.filtersState[filterRange.id] = 100;
+      } else {
+        filterRange.value = 0;
+        this.filtersState[filterRange.id] = 0;
+      }
+    });
+  }
+
   addPaintingEvents() {
     createPaintingCanvasBtn.addEventListener("click", () => {
       this.createPaintingCanvas();
     });
+
     removePaintingCanvasBtn.addEventListener("click", () => {
       if (!this.paintingCanvas) return;
       this.paintingCanvas.remove();
@@ -446,6 +542,10 @@ class ImageEditor {
 
       this.cropper.enable();
     });
+
+    applyPaintingCanvasBtn.addEventListener('click', () => {
+      this.applyPaintingCanvas();
+    })
   }
 
   addFiltersEvents() {
@@ -459,19 +559,8 @@ class ImageEditor {
     });
 
     this.resetFiltersBtn.addEventListener("click", () => {
-      this.filtersSliders.forEach((filterRange) => {
-        if (
-          filterRange.id === "brightness" ||
-          filterRange.id === "saturation" ||
-          filterRange.id === "contrast"
-        ) {
-          filterRange.value = 100;
-          this.filtersState[filterRange.id] = 100;
-        } else {
-          filterRange.value = 0;
-          this.filtersState[filterRange.id] = 0;
-        }
-      });
+      this.resetFilters();
+
       this.applyFilters(this.previewImage);
       this.applyFilters(this.croppedBox);
     });
@@ -556,6 +645,14 @@ class ImageEditor {
 
     this.cropperBtnDownload.addEventListener("click", () => {
       this.downloadImage();
+    });
+    this.cropperSetBtn.addEventListener("click", () => {
+      this.cropper.setCropBoxData({
+        left: 0,
+        top: 0,
+        width: this.parentContainer.clientWidth,
+        height: this.parentContainer.clientHeight
+      })
     });
   }
 }
