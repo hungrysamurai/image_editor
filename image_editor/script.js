@@ -4,10 +4,11 @@ class ImageEditor {
   constructor(parentContainer, imageFile) {
     this.parentContainer = parentContainer;
 
-    this.aspectRatio;
     this.croppedBox;
     this.previewImage;
+
     this.paintingCanvas;
+    this.createPaintngControls();
 
     this.filtersState = {
       brightness: 100,
@@ -34,16 +35,21 @@ class ImageEditor {
       background: false,
       autoCrop: false,
       ready: () => {
+
+        // Apply filters to current preview image
         this.previewImage = this.cropper.image;
         this.applyFilters(this.previewImage);
 
         this.croppedBox = this.cropper.viewBox.querySelector("img");
         this.applyFilters(this.croppedBox);
 
-        this.cropper.canvasData.top = 0;
-
         // Capture initial canvas width to disable moving if fully zoomed out
         this.cropper.zoomOutWidth = this.cropper.canvasData.width;
+
+        // Fix horizontal shift of image
+        // this.cropper.setCanvasData({
+        //   top: 0
+        // })
 
         // Add cropper events if it is first initialiization
         this.croppersCounter++;
@@ -72,14 +78,11 @@ class ImageEditor {
           this.cropper.setDragMode("move");
         } else {
           this.cropper.setDragMode("none");
+          // Fix horizontal shift of image
+          this.cropper.setCanvasData({
+            top: 0
+          })
         }
-
-        // console.log(this.previewImage.naturalWidth);
-        // console.log(this.previewImage.width);
-        // console.log(this.cropper.getCanvasData());
-        // console.log(this.cropper.canvasData);
-        // console.log(parentContainer.clientWidth);
-        // console.log(parentContainer.clientHeight);
       },
     });
 
@@ -102,7 +105,6 @@ class ImageEditor {
 
       // Set asp-ratio of container
       imageContainer.style.aspectRatio = `${aspectRatio} / 1`;
-      this.aspectRatio = aspectRatio;
     };
 
     // imageContainer.appendChild(canvasElement);
@@ -114,7 +116,7 @@ class ImageEditor {
   }
 
   createCropperControls() {
-    // Add buttons to DOM
+    // Add cropper buttons to DOM
     cropperControlsContainer.innerHTML = `
       <button id="cropper-clear-btn">Crop-mode off</button>
       <button id="cropper-crop-btn">Crop-mode on</button>
@@ -132,12 +134,8 @@ class ImageEditor {
       <button id="cropper-reflect-x-btn">Reflect X</button>
       <button id="cropper-apply-btn">Apply Crop</button>
       <button id="cropper-download-btn">Download</button>
-      <input type="range" value="0" min="-180" max="180" id="cropper-rotation" />
-      <label for="cropper-rotation">Rotation deg</label>
-      <button id="cropper-reset-rotation-btn">Reset</button>
       <button id="cropper-undo-btn">Undo</button>
 
-      <button id="cropper-set-btn">SET</button>
     `;
 
     // Init buttons
@@ -186,19 +184,13 @@ class ImageEditor {
     this.cropperBtnReflectY = cropperControlsContainer.querySelector(
       "#cropper-reflect-y-btn"
     );
-    this.cropperRotationSlider =
-      cropperControlsContainer.querySelector("#cropper-rotation");
-    this.cropperRotationSliderReset = cropperControlsContainer.querySelector(
-      "#cropper-reset-rotation-btn"
-    );
     this.cropperUndoBtn =
       cropperControlsContainer.querySelector("#cropper-undo-btn");
-
-    this.cropperSetBtn =
-      cropperControlsContainer.querySelector("#cropper-set-btn");
   }
 
   createFiltersControls() {
+
+    // Create filters controls in DOM
     filterControlsContainer.innerHTML = `
      <h3>Filters Sliders</h3>
       <div class="filter-range-slider">
@@ -228,6 +220,7 @@ class ImageEditor {
       <button id="reset-filters">Reset Filters</button>
     `;
 
+    // Init filters sliders
     this.filtersSliders = filterControlsContainer.querySelectorAll(
       ".filter-range-slider input"
     );
@@ -235,15 +228,54 @@ class ImageEditor {
       filterControlsContainer.querySelector("#reset-filters");
   }
 
+  createPaintngControls() {
+    paintingControlsContainer.innerHTML = `
+      <div class="painting-buttons">
+        <button id="create-drawing-canvas">Create canvas</button>
+        <button id="remove-drawing-canvas">Remove canvas</button>
+        <button id="apply-drawing-canvas">Apply canvas</button>
+        <button id="clear-drawing-canvas">Clear canvas</button>
+      </div>
+
+      <button id="painting-brush">Brush</button>
+      <button id="eraser-brush">Eraser</button>
+      <button id="decrease-brush">-</button>
+      <span id="size-brush">20</span>
+      <button id="increase-brush">+</button>
+      <input type="color" name="" id="color-picker" />
+    `
+
+    // Init controls
+    this.createPaintingCanvasBtn = paintingControlsContainer.querySelector(
+      "#create-drawing-canvas"
+    );
+    this.removePaintingCanvasBtn = paintingControlsContainer.querySelector(
+      "#remove-drawing-canvas"
+    );
+    this.applyPaintingCanvasBtn = paintingControlsContainer.querySelector("#apply-drawing-canvas");
+    this.clearPaintingCanvasBtn = paintingControlsContainer.querySelector("#clear-drawing-canvas");
+    this.colorPicker = paintingControlsContainer.querySelector("#color-picker");
+    this.increaseBrushSize = paintingControlsContainer.querySelector("#increase-brush");
+    this.decreaseBrushSize = paintingControlsContainer.querySelector("#decrease-brush");
+    this.brushSizeEl = paintingControlsContainer.querySelector("#size-brush");
+    this.brushModeBtn = paintingControlsContainer.querySelector("#painting-brush");
+    this.eraserModeBtn = paintingControlsContainer.querySelector("#eraser-brush");
+  }
+
   applyFilters(element) {
-    element.style.filter = `
+    let filtersString = `
   brightness(${this.filtersState.brightness}%) 
   contrast(${this.filtersState.contrast}%) 
   saturate(${this.filtersState.saturation}%) 
   invert(${this.filtersState.inversion}%) 
   blur(${this.filtersState.blur}px) 
   hue-rotate(${this.filtersState.hue}deg)
-      `;
+      `
+    if (element) {
+      element.style.filter = filtersString;
+    }
+
+    return filtersString;
   }
 
   setUndoBtn() {
@@ -277,8 +309,6 @@ class ImageEditor {
 
     this.saveCanvas(nextCanvas);
     this.canvasReplace(nextCanvas);
-
-    this.cropperRotationSlider.value = 0;
   }
 
   undoCrop() {
@@ -293,7 +323,6 @@ class ImageEditor {
       let previous = this.loadCanvas();
       this.canvasReplace(previous);
     }
-    this.cropperRotationSlider.value = 0;
   }
 
   canvasReplace(canvas) {
@@ -314,22 +343,11 @@ class ImageEditor {
     );
   }
 
-  applyCanvasFilters() {
-    return `
-  brightness(${this.filtersState.brightness}%) 
-      contrast(${this.filtersState.contrast}%) 
-      saturate(${this.filtersState.saturation}%) 
-      invert(${this.filtersState.inversion}%) 
-      blur(${this.filtersState.blur}px) 
-      hue-rotate(${this.filtersState.hue}deg)
-  `;
-  }
-
   downloadImage() {
     let canvas = this.cropper.getCroppedCanvas();
     const ctx = canvas.getContext("2d");
 
-    ctx.filter = this.applyCanvasFilters();
+    ctx.filter = this.applyFilters();
 
     ctx.drawImage(canvas, 0, 0);
 
@@ -350,11 +368,8 @@ class ImageEditor {
 
     // Create canvas element
     let paintingCanvas = document.createElement("canvas");
-    console.log(this.cropper.getImageData());
+
     // Set canvas element styles
-    paintingCanvas.style.transform = `rotate(${
-      this.cropper.getImageData().rotate
-    }deg)`;
     paintingCanvas.style.position = "absolute";
     paintingCanvas.style.left = `${this.cropper.getCanvasData().left}px`;
     paintingCanvas.style.top = `${this.cropper.getCanvasData().top}px`;
@@ -364,22 +379,16 @@ class ImageEditor {
     paintingCanvas.height = this.previewImage.height;
     paintingCanvas.width = this.previewImage.width;
 
-    // paintingCanvas.height = this.parentContainer.clientHeight;
-    // paintingCanvas.width = this.parentContainer.clientWidth;
-    // if (!this.zoomed) {
-    //   paintingCanvas.height = this.previewImage.height;
-    //   paintingCanvas.width = this.previewImage.width;
-    // } else {
-    //   paintingCanvas.height = this.parentContainer.clientHeight;
-    //   paintingCanvas.width = this.parentContainer.clientWidth;
-    // }
-
+    // Drawing functionality
     const ctx = paintingCanvas.getContext("2d");
 
+    // Insert drawing canvas element in DOM
     this.parentContainer.insertAdjacentElement("afterbegin", paintingCanvas);
 
+    // Set current painting canvas
     this.paintingCanvas = paintingCanvas;
 
+    // Init brush
     let color = "#000000";
     let size = 10;
 
@@ -388,36 +397,38 @@ class ImageEditor {
     let x;
     let y;
 
-    colorPicker.value = color;
-    brushSizeEl.textContent = size;
+    this.colorPicker.value = color;
+    this.brushSizeEl.textContent = size;
 
-    brushModeBtn.addEventListener("click", () => {
+
+    // Add brush events
+    this.brushModeBtn.addEventListener("click", () => {
       isEraser = false;
     });
 
-    eraserModeBtn.addEventListener("click", () => {
+    this.eraserModeBtn.addEventListener("click", () => {
       isEraser = true;
     });
 
-    colorPicker.addEventListener("change", (e) => (color = e.target.value));
+    this.colorPicker.addEventListener("change", (e) => (color = e.target.value));
 
-    increaseBrushSize.addEventListener("click", () => {
+    this.increaseBrushSize.addEventListener("click", () => {
       size += 5;
       if (size > 50) {
         size = 50;
       }
-      brushSizeEl.textContent = size;
+      this.brushSizeEl.textContent = size;
     });
 
-    decreaseBrushSize.addEventListener("click", () => {
+    this.decreaseBrushSize.addEventListener("click", () => {
       size -= 5;
       if (size < 5) {
         size = 5;
       }
-      brushSizeEl.textContent = size;
+      this.brushSizeEl.textContent = size;
     });
 
-    clearPaintingCanvasBtn.addEventListener("click", (e) => {
+    this.clearPaintingCanvasBtn.addEventListener("click", () => {
       ctx.clearRect(0, 0, paintingCanvas.width, paintingCanvas.height);
     });
 
@@ -454,6 +465,7 @@ class ImageEditor {
     });
   }
 
+  // Drawing methods
   drawCircle(ctx, color, size, x, y) {
     ctx.beginPath();
     ctx.arc(x, y, size, 0, Math.PI * 2);
@@ -470,63 +482,37 @@ class ImageEditor {
     ctx.stroke();
   }
 
+  // Save painting canvas and merge it with base canvas
   applyPaintingCanvas() {
     if (!this.paintingCanvas) return;
 
     this.cropper.enable();
-
+    // Get base canvas
     let baseCanvas = this.cropper.clear().getCroppedCanvas();
 
-    // this.cropper.setCropBoxData({
-    //   left: 0,
-    //   top: 0,
-    //   width: this.previewImage.naturalWidth,
-    //   height: this.previewImage.naturalHeight
-    // });
-    // console.log(this.cropper.getCropBoxData());
-
-    // let baseCanvas = this.cropper.getCroppedCanvas({
-    //   width: this.previewImage.naturalWidth,
-    //   height: this.previewImage.naturalHeight
-    // });
-
-    // let link = document.createElement("a");
-    // link.download = "123213";
-    // link.href = this.paintingCanvas.toDataURL();
-    // link.click();
-
+    // Draw all current filters on base canvas
     let baseCtx = baseCanvas.getContext("2d");
-    baseCtx.filter = this.applyCanvasFilters();
+    baseCtx.filter = this.applyFilters();
     baseCtx.drawImage(baseCanvas, 0, 0);
 
-    // link = document.createElement("a");
-    // link.download = "123213";
-    // link.href = baseCanvas.toDataURL();
-    // link.click();
-    // let ratio = baseCanvas.width / this.paintingCanvas.width;
-    // console.log();
-    // let paintingCanvasCtx = this.paintingCanvas.getContext("2d");
-    // paintingCanvasCtx.scale(ratio, ratio);
-    // paintingCanvasCtx.drawImage(this.paintingCanvas, 0, 0, baseCanvas.width, baseCanvas.height)
-
+    // Merge base with painting canvas
     let merged = document.createElement("canvas");
     merged.width = baseCanvas.width;
     merged.height = baseCanvas.height;
 
     const ctx = merged.getContext("2d");
-    // console.log(baseCanvas.width / baseCanvas.height);
-    // console.log(baseCanvas.width / this.paintingCanvas.width);
-    // console.log(this.paintingCanvas.width / this.paintingCanvas.height);
 
     ctx.drawImage(baseCanvas, 0, 0);
     ctx.drawImage(this.paintingCanvas, 0, 0, merged.width, merged.height);
 
+    // Save merged canvas
     this.saveCanvas(merged);
     this.canvasReplace(merged);
 
-    this.cropperRotationSlider.value = 0;
+    // Reset filters after merging
     this.resetFilters();
 
+    // Destroy current painting canvas
     this.paintingCanvas.remove();
     this.paintingCanvas = undefined;
   }
@@ -548,11 +534,11 @@ class ImageEditor {
   }
 
   addPaintingEvents() {
-    createPaintingCanvasBtn.addEventListener("click", () => {
+    this.createPaintingCanvasBtn.addEventListener("click", () => {
       this.createPaintingCanvas();
     });
 
-    removePaintingCanvasBtn.addEventListener("click", () => {
+    this.removePaintingCanvasBtn.addEventListener("click", () => {
       if (!this.paintingCanvas) return;
       this.paintingCanvas.remove();
       this.paintingCanvas = undefined;
@@ -560,7 +546,7 @@ class ImageEditor {
       this.cropper.enable();
     });
 
-    applyPaintingCanvasBtn.addEventListener("click", () => {
+    this.applyPaintingCanvasBtn.addEventListener("click", () => {
       this.applyPaintingCanvas();
     });
   }
@@ -629,27 +615,22 @@ class ImageEditor {
 
     this.cropperBtnRotateRight.addEventListener("click", () => {
       this.cropper.rotate(90);
+      this.applyCrop();
     });
 
     this.cropperBtnRotateLeft.addEventListener("click", () => {
       this.cropper.rotate(-90);
+      this.applyCrop();
     });
 
     this.cropperBtnReflectX.addEventListener("click", () => {
       this.cropper.scaleX(this.cropper.imageData.scaleX === -1 ? 1 : -1);
+      this.applyCrop();
     });
 
     this.cropperBtnReflectY.addEventListener("click", () => {
       this.cropper.scaleY(this.cropper.imageData.scaleY === -1 ? 1 : -1);
-    });
-
-    this.cropperRotationSlider.addEventListener("input", (e) => {
-      this.cropper.rotateTo(e.target.value);
-    });
-
-    this.cropperRotationSliderReset.addEventListener("click", () => {
-      this.cropper.rotateTo(0);
-      this.cropperRotationSlider.value = 0;
+      this.applyCrop();
     });
 
     this.cropperBtnApply.addEventListener("click", () => {
@@ -663,20 +644,10 @@ class ImageEditor {
     this.cropperBtnDownload.addEventListener("click", () => {
       this.downloadImage();
     });
-    this.cropperSetBtn.addEventListener("click", () => {
-      this.cropper.setCropBoxData({
-        left: 0,
-        top: 0,
-        width: this.previewImage.width,
-        height: this.previewImage.height,
-      });
-      console.log(this.cropper.getCropBoxData());
-      console.log(this.cropper);
-
-      console.log(this.cropper.getImageData());
-    });
   }
 }
+
+
 
 // DOM elements
 const parentElement = document.querySelector(".main-container");
@@ -689,20 +660,8 @@ const filterControlsContainer = document.querySelector(".filters-controls");
 const cropperControlsContainer = document.querySelector(".cropper-controls");
 
 // Painting Controls container
-const createPaintingCanvasBtn = document.querySelector(
-  "#create-drawing-canvas"
-);
-const removePaintingCanvasBtn = document.querySelector(
-  "#remove-drawing-canvas"
-);
-const applyPaintingCanvasBtn = document.querySelector("#apply-drawing-canvas");
-const clearPaintingCanvasBtn = document.querySelector("#clear-drawing-canvas");
-const colorPicker = document.querySelector("#color-picker");
-const increaseBrushSize = document.querySelector("#increase-brush");
-const decreaseBrushSize = document.querySelector("#decrease-brush");
-const brushSizeEl = document.querySelector("#size-brush");
-const brushModeBtn = document.querySelector("#painting-brush");
-const eraserModeBtn = document.querySelector("#eraser-brush");
+const paintingControlsContainer = document.querySelector('.painting-controls')
+
 
 let imageEditor;
 
