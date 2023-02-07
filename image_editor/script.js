@@ -8,7 +8,7 @@ class ImageEditor {
     this.previewImage;
 
     this.paintingCanvas;
-    this.createPaintngControls();
+    this.createInitialPaintingControls();
 
     this.filtersState = {
       brightness: 100,
@@ -228,38 +228,65 @@ class ImageEditor {
       filterControlsContainer.querySelector("#reset-filters");
   }
 
-  createPaintngControls() {
+  createInitialPaintingControls() {
     paintingControlsContainer.innerHTML = `
       <div class="painting-buttons">
+      
         <button id="create-drawing-canvas">Create canvas</button>
-        <button id="remove-drawing-canvas">Remove canvas</button>
-        <button id="apply-drawing-canvas">Apply canvas</button>
-        <button id="clear-drawing-canvas">Clear canvas</button>
-      </div>
 
-      <button id="painting-brush">Brush</button>
-      <button id="eraser-brush">Eraser</button>
-      <button id="decrease-brush">-</button>
-      <span id="size-brush">20</span>
-      <button id="increase-brush">+</button>
-      <input type="color" name="" id="color-picker" />
+        <div id="current-painting-controls"></div>
+      
+       </div>
     `
 
     // Init controls
     this.createPaintingCanvasBtn = paintingControlsContainer.querySelector(
       "#create-drawing-canvas"
     );
-    this.removePaintingCanvasBtn = paintingControlsContainer.querySelector(
+    this.currentPaintingControls = paintingControlsContainer.querySelector('#current-painting-controls');
+  }
+
+  createCurrentPaintingControls() {
+    this.currentPaintingControls.innerHTML = ` 
+     <button id="remove-drawing-canvas">Remove canvas</button>
+        <button id="apply-drawing-canvas">Apply canvas</button>
+        <button id="clear-drawing-canvas">Clear canvas</button>
+        
+        <button id="painting-brush">Brush</button>
+      <button id="eraser-brush">Eraser</button>
+      <button id="decrease-brush">-</button>
+      <span id="size-brush">20</span>
+      <button id="increase-brush">+</button>
+      <input type="color" name="" id="color-picker" />
+      `
+
+    this.applyPaintingCanvasBtn = this.currentPaintingControls.querySelector("#apply-drawing-canvas");
+    this.removePaintingCanvasBtn = this.currentPaintingControls.querySelector(
       "#remove-drawing-canvas"
     );
-    this.applyPaintingCanvasBtn = paintingControlsContainer.querySelector("#apply-drawing-canvas");
-    this.clearPaintingCanvasBtn = paintingControlsContainer.querySelector("#clear-drawing-canvas");
-    this.colorPicker = paintingControlsContainer.querySelector("#color-picker");
-    this.increaseBrushSize = paintingControlsContainer.querySelector("#increase-brush");
-    this.decreaseBrushSize = paintingControlsContainer.querySelector("#decrease-brush");
-    this.brushSizeEl = paintingControlsContainer.querySelector("#size-brush");
-    this.brushModeBtn = paintingControlsContainer.querySelector("#painting-brush");
-    this.eraserModeBtn = paintingControlsContainer.querySelector("#eraser-brush");
+    this.clearPaintingCanvasBtn = this.currentPaintingControls.querySelector("#clear-drawing-canvas");
+    this.colorPicker = this.currentPaintingControls.querySelector("#color-picker");
+    this.increaseBrushSize = this.currentPaintingControls.querySelector("#increase-brush");
+    this.decreaseBrushSize = this.currentPaintingControls.querySelector("#decrease-brush");
+    this.brushSizeEl = this.currentPaintingControls.querySelector("#size-brush");
+    this.brushModeBtn = this.currentPaintingControls.querySelector("#painting-brush");
+    this.eraserModeBtn = this.currentPaintingControls.querySelector("#eraser-brush");
+
+    this.removePaintingCanvasBtn.addEventListener("click", () => {
+      if (!this.paintingCanvas) return;
+      this.paintingCanvas.remove();
+      this.paintingCanvas = undefined;
+      this.removeCurrentPaintingControls()
+      this.cropper.enable();
+    });
+
+    this.applyPaintingCanvasBtn.addEventListener("click", () => {
+      this.applyPaintingCanvas();
+    });
+  }
+
+  removeCurrentPaintingControls() {
+    this.currentPaintingControls.innerHTML = '';
   }
 
   applyFilters(element) {
@@ -515,6 +542,7 @@ class ImageEditor {
     // Destroy current painting canvas
     this.paintingCanvas.remove();
     this.paintingCanvas = undefined;
+    this.removeCurrentPaintingControls()
   }
 
   resetFilters() {
@@ -535,19 +563,8 @@ class ImageEditor {
 
   addPaintingEvents() {
     this.createPaintingCanvasBtn.addEventListener("click", () => {
+      this.createCurrentPaintingControls();
       this.createPaintingCanvas();
-    });
-
-    this.removePaintingCanvasBtn.addEventListener("click", () => {
-      if (!this.paintingCanvas) return;
-      this.paintingCanvas.remove();
-      this.paintingCanvas = undefined;
-
-      this.cropper.enable();
-    });
-
-    this.applyPaintingCanvasBtn.addEventListener("click", () => {
-      this.applyPaintingCanvas();
     });
   }
 
@@ -647,8 +664,6 @@ class ImageEditor {
   }
 }
 
-
-
 // DOM elements
 const parentElement = document.querySelector(".main-container");
 const uploadInput = document.querySelector("#upload-input");
@@ -661,7 +676,6 @@ const cropperControlsContainer = document.querySelector(".cropper-controls");
 
 // Painting Controls container
 const paintingControlsContainer = document.querySelector('.painting-controls')
-
 
 let imageEditor;
 
