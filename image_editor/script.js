@@ -7,8 +7,6 @@ class ImageEditor {
     this.aspectRatio;
     this.croppedBox;
     this.previewImage;
-    this.zoomed;
-
     this.paintingCanvas;
 
     this.filtersState = {
@@ -43,8 +41,6 @@ class ImageEditor {
         this.applyFilters(this.croppedBox);
 
         this.cropper.canvasData.top = 0;
-        console.log(this.cropper.getCanvasData());
-
 
         // Capture initial canvas width to disable moving if fully zoomed out
         this.cropper.zoomOutWidth = this.cropper.canvasData.width;
@@ -69,15 +65,17 @@ class ImageEditor {
         }
       },
       zoom: () => {
-
-
-        if (Math.round(this.cropper.canvasData.width) !== parentContainer.clientWidth) {
-          this.zoomed = true;
+        if (
+          Math.round(this.cropper.canvasData.width) !==
+          parentContainer.clientWidth
+        ) {
           this.cropper.setDragMode("move");
         } else {
-          this.zoomed = false;
           this.cropper.setDragMode("none");
         }
+
+        // console.log(this.previewImage.naturalWidth);
+        // console.log(this.previewImage.width);
         // console.log(this.cropper.getCanvasData());
         // console.log(this.cropper.canvasData);
         // console.log(parentContainer.clientWidth);
@@ -196,7 +194,8 @@ class ImageEditor {
     this.cropperUndoBtn =
       cropperControlsContainer.querySelector("#cropper-undo-btn");
 
-    this.cropperSetBtn = cropperControlsContainer.querySelector("#cropper-set-btn");
+    this.cropperSetBtn =
+      cropperControlsContainer.querySelector("#cropper-set-btn");
   }
 
   createFiltersControls() {
@@ -323,7 +322,7 @@ class ImageEditor {
       invert(${this.filtersState.inversion}%) 
       blur(${this.filtersState.blur}px) 
       hue-rotate(${this.filtersState.hue}deg)
-  `
+  `;
   }
 
   downloadImage() {
@@ -351,17 +350,22 @@ class ImageEditor {
 
     // Create canvas element
     let paintingCanvas = document.createElement("canvas");
-
+    console.log(this.cropper.getImageData());
     // Set canvas element styles
+    paintingCanvas.style.transform = `rotate(${
+      this.cropper.getImageData().rotate
+    }deg)`;
     paintingCanvas.style.position = "absolute";
+    paintingCanvas.style.left = `${this.cropper.getCanvasData().left}px`;
+    paintingCanvas.style.top = `${this.cropper.getCanvasData().top}px`;
     paintingCanvas.style.zIndex = 1;
     paintingCanvas.style.overflow = "hidden";
-    paintingCanvas.style.transform = `rotate(${this.cropper.imageData.rotate}deg)`;
 
-    // paintingCanvas.height = this.previewImage.height;
-    // paintingCanvas.width = this.previewImage.width;
-    paintingCanvas.height = this.parentContainer.clientHeight;
-    paintingCanvas.width = this.parentContainer.clientWidth;
+    paintingCanvas.height = this.previewImage.height;
+    paintingCanvas.width = this.previewImage.width;
+
+    // paintingCanvas.height = this.parentContainer.clientHeight;
+    // paintingCanvas.width = this.parentContainer.clientWidth;
     // if (!this.zoomed) {
     //   paintingCanvas.height = this.previewImage.height;
     //   paintingCanvas.width = this.previewImage.width;
@@ -387,13 +391,13 @@ class ImageEditor {
     colorPicker.value = color;
     brushSizeEl.textContent = size;
 
-    brushModeBtn.addEventListener('click', () => {
+    brushModeBtn.addEventListener("click", () => {
       isEraser = false;
-    })
+    });
 
-    eraserModeBtn.addEventListener('click', () => {
+    eraserModeBtn.addEventListener("click", () => {
       isEraser = true;
-    })
+    });
 
     colorPicker.addEventListener("change", (e) => (color = e.target.value));
 
@@ -433,7 +437,6 @@ class ImageEditor {
 
     paintingCanvas.addEventListener("mousemove", (e) => {
       if (isPressed) {
-
         if (isEraser) {
           ctx.globalCompositeOperation = "destination-out";
         } else {
@@ -471,35 +474,52 @@ class ImageEditor {
     if (!this.paintingCanvas) return;
 
     this.cropper.enable();
-    this.cropper.crop();
 
-    this.cropper.setCropBoxData({
-      left: 0,
-      top: 0,
-      width: this.parentContainer.clientWidth,
-      height: this.parentContainer.clientHeight
-    });
+    let baseCanvas = this.cropper.clear().getCroppedCanvas();
 
-    let baseCanvas = this.cropper.getCroppedCanvas({
-      minWidth: 256,
-      minHeight: 256,
-      maxWidth: 4096,
-      maxHeight: 4096,
-    });
+    // this.cropper.setCropBoxData({
+    //   left: 0,
+    //   top: 0,
+    //   width: this.previewImage.naturalWidth,
+    //   height: this.previewImage.naturalHeight
+    // });
+    // console.log(this.cropper.getCropBoxData());
+
+    // let baseCanvas = this.cropper.getCroppedCanvas({
+    //   width: this.previewImage.naturalWidth,
+    //   height: this.previewImage.naturalHeight
+    // });
+
+    // let link = document.createElement("a");
+    // link.download = "123213";
+    // link.href = this.paintingCanvas.toDataURL();
+    // link.click();
 
     let baseCtx = baseCanvas.getContext("2d");
     baseCtx.filter = this.applyCanvasFilters();
     baseCtx.drawImage(baseCanvas, 0, 0);
 
-    let merged = document.createElement('canvas');
+    // link = document.createElement("a");
+    // link.download = "123213";
+    // link.href = baseCanvas.toDataURL();
+    // link.click();
+    // let ratio = baseCanvas.width / this.paintingCanvas.width;
+    // console.log();
+    // let paintingCanvasCtx = this.paintingCanvas.getContext("2d");
+    // paintingCanvasCtx.scale(ratio, ratio);
+    // paintingCanvasCtx.drawImage(this.paintingCanvas, 0, 0, baseCanvas.width, baseCanvas.height)
+
+    let merged = document.createElement("canvas");
     merged.width = baseCanvas.width;
     merged.height = baseCanvas.height;
 
     const ctx = merged.getContext("2d");
+    // console.log(baseCanvas.width / baseCanvas.height);
+    // console.log(baseCanvas.width / this.paintingCanvas.width);
+    // console.log(this.paintingCanvas.width / this.paintingCanvas.height);
 
     ctx.drawImage(baseCanvas, 0, 0);
-    ctx.drawImage(this.paintingCanvas, 0, 0, baseCanvas.width, baseCanvas.height);
-
+    ctx.drawImage(this.paintingCanvas, 0, 0, merged.width, merged.height);
 
     this.saveCanvas(merged);
     this.canvasReplace(merged);
@@ -509,9 +529,6 @@ class ImageEditor {
 
     this.paintingCanvas.remove();
     this.paintingCanvas = undefined;
-
-    this.cropper.enable();
-
   }
 
   resetFilters() {
@@ -543,9 +560,9 @@ class ImageEditor {
       this.cropper.enable();
     });
 
-    applyPaintingCanvasBtn.addEventListener('click', () => {
+    applyPaintingCanvasBtn.addEventListener("click", () => {
       this.applyPaintingCanvas();
-    })
+    });
   }
 
   addFiltersEvents() {
@@ -650,9 +667,13 @@ class ImageEditor {
       this.cropper.setCropBoxData({
         left: 0,
         top: 0,
-        width: this.parentContainer.clientWidth,
-        height: this.parentContainer.clientHeight
-      })
+        width: this.previewImage.width,
+        height: this.previewImage.height,
+      });
+      console.log(this.cropper.getCropBoxData());
+      console.log(this.cropper);
+
+      console.log(this.cropper.getImageData());
     });
   }
 }

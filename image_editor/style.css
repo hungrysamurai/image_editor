@@ -62,6 +62,8 @@ body {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-around;
+  position: relative;
+  z-index: 5;
 }
 
 .cropper-controls {
