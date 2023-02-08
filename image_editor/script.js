@@ -30,7 +30,6 @@ class ImageEditor {
 
     this.createCropperControls();
     this.createPaintingControls();
-
     this.createFiltersControls();
 
     // Init cropper
@@ -120,6 +119,15 @@ class ImageEditor {
     this.cpContainer.append(this.createPaintingCanvasBtn);
     this.cpContainer.append(this.filtersToggleBtn);
     this.cpContainer.append(this.cropperUndoBtn);
+
+    // Create new upload btn
+    this.uploadNewImgBtn = document.createElement('label');
+    this.uploadNewImgBtn.className = 'upload-btn-top';
+    this.uploadNewImgBtn.setAttribute('for', 'upload-input');
+    this.uploadNewImgBtn.textContent = 'Загрузить новое';
+
+    this.cpContainer.append(this.uploadNewImgBtn);
+
     this.cpContainer.append(this.cropperDownloadBtn);
   }
 
@@ -226,6 +234,10 @@ class ImageEditor {
         this.cropper.crop();
       } else {
         this.cropper.clear();
+      }
+
+      if (this.paintingCanvas) {
+        this.applyPaintingCanvas()
       }
     });
 
@@ -701,23 +713,60 @@ const filtersPanel = document.querySelector('.filters-panel');
 
 const DOMContainers = [cpContainer, mainContainer, toolContainer, filtersPanel];
 
-
-
-
+// Upload input
 const uploadInput = document.querySelector("#upload-input");
+
 let imageEditor;
 
 uploadInput.addEventListener("change", (e) => {
   if (e.target.files.length !== 1) return;
 
-  mainContainer.innerHTML = "";
-  imageEditor = new ImageEditor(DOMContainers, e.target.files[0]);
+  if (document.querySelector('#initial-upload')) {
+    document.querySelector('#initial-upload').remove();
+  }
+
+
+  uploadFile(e.target.files[0]);
 
   imageEditor.filtersToggleBtn.addEventListener('click', () => {
     filtersPanel.classList.toggle('hide')
+  });
+
+  imageEditor.cropperTogglerBtn.addEventListener('click', () => {
+    updateToolContainer('crop');
   })
+  imageEditor.createPaintingCanvasBtn.addEventListener('click', () => {
+    if (!imageEditor.paintingCanvas) {
+      updateToolContainer('crop');
+    } else {
+      updateToolContainer('paint');
+    }
+  });
+
+  imageEditor.applyPaintingCanvasBtn.addEventListener('click', () => {
+    updateToolContainer('crop');
+  })
+
+  updateToolContainer('crop');
 });
 
+
+function updateToolContainer(mode) {
+  if (mode === 'crop') {
+    imageEditor.cropperControlsContainer.className = 'cropper-controls';
+    imageEditor.paintingControlsContainer.className = 'painting-controls hide';
+  } else if (mode === 'paint') {
+    imageEditor.cropperControlsContainer.className = 'cropper-controls hide';
+    imageEditor.paintingControlsContainer.className = 'painting-controls';
+  }
+}
+
+function uploadFile(file) {
+  mainContainer.innerHTML = "";
+  cpContainer.innerHTML = "";
+
+  imageEditor = new ImageEditor(DOMContainers, file);
+}
 
 // Loading screen
 // Return to previous state:

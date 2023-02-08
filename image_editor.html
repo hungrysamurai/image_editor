@@ -10,6 +10,13 @@
   </head>
 
   <body>
+    <input
+      type="file"
+      id="upload-input"
+      accept="image/jpeg, image/png, image/jpg"
+      hidden
+    />
+
     <div class="control-panel-container">
       <!-- <div class="paint">
         <button>
@@ -20,13 +27,6 @@
 
     <div class="main-container">
       <div class="placeholder">
-        <input
-          type="file"
-          id="upload-input"
-          accept="image/jpeg, image/png, image/jpg"
-          hidden
-        />
-
         <label for="upload-input" id="upload-btn" class="upload-btn"
           >Загрузить</label
         >
@@ -35,16 +35,9 @@
     </div>
 
     <div class="tool-container">
-      <!-- <input
-        type="file"
-        id="upload-input"
-        accept="image/jpeg, image/png, image/jpg"
-        hidden
-      />
-
-      <label for="upload-input" id="upload-btn" class="upload-btn"
+      <label for="upload-input" id="initial-upload" class="upload-btn"
         >Загрузить</label
-      > -->
+      >
 
       <div class="cropper-controls"></div>
       <div class="painting-controls"></div>
