@@ -10,62 +10,38 @@
   </head>
 
   <body>
-    <div class="main-container"></div>
+    <div class="control-panel-container">
+      <!-- <div class="paint">
+        <button>
+          <img src="./image_editor/icons/iconmonstr-paintbrush-1.svg" alt="" />
+        </button>
+      </div> -->
+    </div>
 
-    <div class="controls-container">
+    <div class="main-container">
+      <div class="placeholder">
+        <p>Перетащите картинку для редактирования</p>
+      </div>
+    </div>
+
+    <div class="tool-container">
       <input
         type="file"
         id="upload-input"
         accept="image/jpeg, image/png, image/jpg"
         hidden
       />
+
       <label for="upload-input" id="upload-btn" class="upload-btn"
-        >Upload</label
+        >Загрузить</label
       >
 
-      <div class="filters-controls">
-        <!-- <h3>Filters Sliders</h3>
-      <div class="filter-range-slider">
-        <input type="range" value="100" min="0" max="200" id="brightness" />
-        <label for="brightness">Brightness</label>
-      </div>
-      <div class="filter-range-slider">
-        <input type="range" value="100" min="0" max="200" id="contrast" />
-        <label for="contrast">Contrast</label>
-      </div>
-      <div class="filter-range-slider">
-        <input type="range" value="100" min="0" max="200" id="saturation" />
-        <label for="saturation">Saturation</label>
-      </div>
-      <div class="filter-range-slider">
-        <input type="range" value="0" min="0" max="100" id="inversion" />
-        <label for="inversion">Inversion</label>
-      </div>
-      <div class="filter-range-slider">
-        <input type="range" value="0" min="0" max="20" id="blur" />
-        <label for="blur">Blur</label>
-      </div>
-      <div class="filter-range-slider">
-        <input type="range" value="0" min="0" max="360" id="hue" />
-        <label for="hue">Hue</label>
-      </div> -->
-      </div>
-
       <div class="cropper-controls"></div>
-      <div class="painting-controls">
-        <!-- <div class="painting-buttons">
-        <button id="create-drawing-canvas">Create canvas</button>
-        <button id="remove-drawing-canvas">Remove canvas</button>
-        <button id="apply-drawing-canvas">Apply canvas</button>
-        <button id="clear-drawing-canvas">Clear canvas</button>
-      </div>
-      <button id="painting-brush">Brush</button>
-      <button id="eraser-brush">Eraser</button>
-      <button id="decrease-brush">-</button>
-      <span id="size-brush">20</span>
-      <button id="increase-brush">+</button>
-      <input type="color" name="" id="color-picker" /> -->
-      </div>
+      <div class="painting-controls"></div>
+    </div>
+
+    <div class="filters-panel">
+      <div class="filters-controls"></div>
     </div>
 
     <script type="module" src="./image_editor/script.js"></script>
