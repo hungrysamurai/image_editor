@@ -20,12 +20,22 @@
 
     <div class="main-container">
       <div class="placeholder">
+        <input
+          type="file"
+          id="upload-input"
+          accept="image/jpeg, image/png, image/jpg"
+          hidden
+        />
+
+        <label for="upload-input" id="upload-btn" class="upload-btn"
+          >Загрузить</label
+        >
         <p>Перетащите картинку для редактирования</p>
       </div>
     </div>
 
     <div class="tool-container">
-      <input
+      <!-- <input
         type="file"
         id="upload-input"
         accept="image/jpeg, image/png, image/jpg"
@@ -34,13 +44,13 @@
 
       <label for="upload-input" id="upload-btn" class="upload-btn"
         >Загрузить</label
-      >
+      > -->
 
       <div class="cropper-controls"></div>
       <div class="painting-controls"></div>
     </div>
 
-    <div class="filters-panel">
+    <div class="filters-panel hide">
       <div class="filters-controls"></div>
     </div>
 

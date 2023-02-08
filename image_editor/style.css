@@ -76,7 +76,7 @@ body {
   bottom: 0px;
   height: 15%;
   width: 100%;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   background-color: var(--light-gray);
@@ -84,6 +84,10 @@ body {
   box-shadow: 0px 0px 0.5rem 0.5rem rgb(0 0 0 / 0.1);
   z-index: 6;
   overflow: scroll;
+}
+
+.filters-panel.hide {
+  display: none;
 }
 
 /* 
