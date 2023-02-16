@@ -430,25 +430,3 @@ body {
 .hide {
   display: none;
 }
-
-/* 
-.cropper-controls {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.painting-buttons {
-  display: flex;
-  flex-direction: column;
-}
-
-.upload-btn {
-  cursor: pointer;
-  text-align: center;
-  padding: 3px;
-  border: 2px solid black;
-}
-
-.upload-btn.hide {
-  display: none;
-} */
