@@ -17,28 +17,37 @@
       hidden
     />
 
-    <div class="control-panel-container">
-      <!-- <div class="paint">
-        <button>
-          <img src="./image_editor/icons/iconmonstr-paintbrush-1.svg" alt="" />
-        </button>
-      </div> -->
-    </div>
+    <div class="control-panel-container"></div>
 
     <div class="main-container">
       <div class="placeholder">
-        <label for="upload-input" id="upload-btn" class="upload-btn"
-          >Загрузить</label
-        >
-        <p>Перетащите картинку для редактирования</p>
+        <p class="placeholder-text">
+          Перетащите изображение<br />для редактирования
+        </p>
       </div>
     </div>
 
     <div class="tool-container">
-      <label for="upload-input" id="initial-upload" class="upload-btn"
-        >Загрузить</label
-      >
-
+      <div class="placeholder-button">
+        <label for="upload-input" id="initial-upload" class="upload-btn">
+          <svg
+            width="97"
+            height="73"
+            viewBox="0 0 97 73"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M78.7276 28.762C77.8708 12.7385 64.6909 0 48.5 0C32.3091 0 19.1292 12.7385 18.2724 28.762C7.88529 30.6397 0 39.7363 0 50.6944C0 63.0112 9.95463 73 22.2292 73H36.375V64.8889H22.2292C14.4288 64.8889 8.08333 58.5217 8.08333 50.6944C8.08333 39.3511 18.1026 35.1495 26 35.6078C25.3251 18.5014 34.924 8.11111 48.5 8.11111C62.4559 8.11111 72.3095 19.4545 71 35.6078C78.0527 35.4212 88.9167 38.6535 88.9167 50.6944C88.9167 58.5217 82.5712 64.8889 74.7708 64.8889H60.625V73H74.7708C87.0454 73 97 63.0112 97 50.6944C97 39.7363 89.1147 30.6397 78.7276 28.762Z"
+              fill="white"
+            />
+            <path
+              d="M52.2083 52.2222H64.3333L48.1667 36L32 52.2222H44.125V72.5H52.2083V52.2222Z"
+              fill="white"
+            />
+          </svg>
+        </label>
+      </div>
       <div class="cropper-controls"></div>
       <div class="painting-controls"></div>
     </div>
