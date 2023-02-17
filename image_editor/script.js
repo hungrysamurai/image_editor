@@ -923,3 +923,4 @@ function preventDefaults(e) {
   e.stopPropagation();
 };
 
+// Image editing tool with filters, cropping and painting functionality. HTML/CSS/JS
