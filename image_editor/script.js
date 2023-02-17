@@ -558,14 +558,7 @@ class ImageEditor {
   }
 
   applyFilters(element) {
-    let filtersString = `
-  brightness(${this.filtersState.brightness}%) 
-  contrast(${this.filtersState.contrast}%) 
-  saturate(${this.filtersState.saturation}%) 
-  invert(${this.filtersState.inversion}%) 
-  blur(${this.filtersState.blur}px) 
-  hue-rotate(${this.filtersState.hue}deg)
-      `;
+    let filtersString = `brightness(${this.filtersState.brightness}%)contrast(${this.filtersState.contrast}%)saturate(${this.filtersState.saturation}%)invert(${this.filtersState.inversion}%) blur(${this.filtersState.blur}px)hue-rotate(${this.filtersState.hue}deg)`;
 
     if (element) {
       element.style.filter = filtersString;
@@ -663,6 +656,7 @@ class ImageEditor {
     ctx.drawImage(canvas, 0, 0);
 
     let result = canvas.toDataURL("image/jpeg");
+    console.log(ctx);
     const createEl = document.createElement("a");
     createEl.href = result;
     createEl.download = "download-this-canvas";
@@ -833,19 +827,63 @@ const filtersPanel = document.querySelector(".filters-panel");
 
 const DOMContainers = [cpContainer, mainContainer, toolContainer, filtersPanel];
 
-// Upload input
+// Upload input element
 const uploadInput = document.querySelector("#upload-input");
 
+// Drag'n'Drop input element
+const dropArea = document.querySelector('.drag-area');
+
+// Init
 let imageEditor;
 
+
+// Event listeners
+
+// Button upload
 uploadInput.addEventListener("change", (e) => {
   if (e.target.files.length !== 1) return;
+  if (!e.target.files[0].type.startsWith('image/')) return;
+
+  uploadFile(e.target.files[0])
+});
+
+
+// Drag'n'Drop upload
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => {
+  dropArea.addEventListener(e, preventDefaults);
+});
+
+// Highlight/unhighlight area
+['dragenter', 'dragover'].forEach(e => {
+  dropArea.addEventListener(e, () => {
+    dropArea.classList.add('active');
+  });
+});
+
+dropArea.addEventListener('dragleave', () => {
+  dropArea.classList.remove('active');
+})
+
+dropArea.addEventListener('drop', (e) => {
+  let dt = e.dataTransfer;
+  let file = dt.files[0];
+
+  if (!file.type.startsWith('image/')) return;
+
+  uploadFile(file);
+});
+
+// Functions
+function uploadFile(file) {
 
   if (document.querySelector("#initial-upload")) {
     document.querySelector("#initial-upload").remove();
   }
 
-  uploadFile(e.target.files[0]);
+  mainContainer.innerHTML = "";
+  cpContainer.innerHTML = "";
+
+  imageEditor = new ImageEditor(DOMContainers, file);
 
   imageEditor.filtersToggleBtn.addEventListener("click", () => {
     filtersPanel.classList.toggle("hide");
@@ -854,6 +892,7 @@ uploadInput.addEventListener("change", (e) => {
   imageEditor.cropperTogglerBtn.addEventListener("click", () => {
     updateToolContainer("crop");
   });
+
   imageEditor.createPaintingCanvasBtn.addEventListener("click", () => {
     if (!imageEditor.paintingCanvas) {
       updateToolContainer("crop");
@@ -867,7 +906,7 @@ uploadInput.addEventListener("change", (e) => {
   });
 
   updateToolContainer("crop");
-});
+}
 
 function updateToolContainer(mode) {
   if (mode === "crop") {
@@ -879,23 +918,8 @@ function updateToolContainer(mode) {
   }
 }
 
-function uploadFile(file) {
-  mainContainer.innerHTML = "";
-  cpContainer.innerHTML = "";
+function preventDefaults(e) {
+  e.preventDefault();
+  e.stopPropagation();
+};
 
-  imageEditor = new ImageEditor(DOMContainers, file);
-}
-
-// Drag'n-Drop
-// Saving image in painting mode
-// Responsive layouts - media queries
-
-
-// Loading screen
-// Return to previous state:
-// this.cropper.setCanvasData({
-//   top: -2678.298442751011,
-//   width: 8636.424696196778,
-//   left: -3211.8762591259397,
-//   height: 5757.616464131186,
-// });
