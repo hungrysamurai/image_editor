@@ -52,7 +52,7 @@ class ImageEditor {
 
           // Capture initial canvas width to disable moving if fully zoomed out
           this.cropper.zoomOutWidth = this.cropper.canvasData.width;
-          this.cropper.imageCenter = this.cropper.getCanvasData()
+          this.cropper.imageCenter = this.cropper.getCanvasData();
 
           // Fix horizontal shift of image
           let topMargin =
@@ -86,10 +86,7 @@ class ImageEditor {
 
         zoom: () => {
           // Enable/disable zoom/move mode
-          if (
-            this.cropper.canvasData.width >
-            this.cropper.zoomOutWidth
-          ) {
+          if (this.cropper.canvasData.width > this.cropper.zoomOutWidth) {
             this.cropper.setDragMode("move");
           } else {
             this.cropper.setDragMode("none");
@@ -201,7 +198,7 @@ class ImageEditor {
     this.cropperControlsContainer =
       this.toolContainer.querySelector(".cropper-controls");
 
-    this.cropperControlsContainer.classList.remove('hide');
+    this.cropperControlsContainer.classList.remove("hide");
 
     // Create cropper toggler button
     this.cropperTogglerBtn = document.createElement("button");
@@ -527,9 +524,14 @@ class ImageEditor {
       
       </div>
 
+      <div class="filters-apply-reset">
       <button id="reset-filters">
       ${icons.filtersReset}
       </button>
+      <button id="apply-filters">
+      ${icons.filtersApply}
+      </button>
+      </div>
     `;
 
     // Init filters sliders
@@ -538,6 +540,8 @@ class ImageEditor {
     );
     this.resetFiltersBtn =
       this.filterControlsContainer.querySelector("#reset-filters");
+    this.applyFiltersBtn =
+      this.filterControlsContainer.querySelector("#apply-filters");
   }
 
   addFiltersEvents() {
@@ -555,6 +559,8 @@ class ImageEditor {
       this.applyFilters(this.previewImage);
       this.applyFilters(this.croppedBox);
     });
+
+    this.applyFiltersBtn.addEventListener("click", () => {});
   }
 
   applyFilters(element) {
@@ -740,7 +746,25 @@ class ImageEditor {
       y = e.offsetY;
     });
 
-    paintingCanvas.addEventListener("mouseup", (e) => {
+    paintingCanvas.addEventListener("touchstart", (e) => {
+      isPressed = true;
+
+      let rect = e.target.getBoundingClientRect();
+      let tx = e.targetTouches[0].pageX - rect.left;
+      let ty = e.targetTouches[0].pageY - rect.top;
+
+      x = tx;
+      y = ty;
+    });
+
+    paintingCanvas.addEventListener("mouseup", () => {
+      isPressed = false;
+
+      x = undefined;
+      y = undefined;
+    });
+
+    paintingCanvas.addEventListener("touchend", () => {
       isPressed = false;
 
       x = undefined;
@@ -748,6 +772,7 @@ class ImageEditor {
     });
 
     paintingCanvas.addEventListener("mousemove", (e) => {
+      console.log(e.type);
       if (isPressed) {
         if (isEraser) {
           ctx.globalCompositeOperation = "destination-out";
@@ -757,6 +782,28 @@ class ImageEditor {
 
         const x2 = e.offsetX;
         const y2 = e.offsetY;
+        this.drawCircle(ctx, color, size, x2, y2);
+        this.drawLine(ctx, color, size, x, y, x2, y2);
+
+        x = x2;
+        y = y2;
+      }
+    });
+
+    paintingCanvas.addEventListener("touchmove", (e) => {
+      if (isPressed) {
+        if (isEraser) {
+          ctx.globalCompositeOperation = "destination-out";
+        } else {
+          ctx.globalCompositeOperation = "source-over";
+        }
+
+        let rect = e.target.getBoundingClientRect();
+        let tx = e.targetTouches[0].pageX - rect.left;
+        let ty = e.targetTouches[0].pageY - rect.top;
+
+        const x2 = tx;
+        const y2 = ty;
         this.drawCircle(ctx, color, size, x2, y2);
         this.drawLine(ctx, color, size, x, y, x2, y2);
 
@@ -831,51 +878,48 @@ const DOMContainers = [cpContainer, mainContainer, toolContainer, filtersPanel];
 const uploadInput = document.querySelector("#upload-input");
 
 // Drag'n'Drop input element
-const dropArea = document.querySelector('.drag-area');
+const dropArea = document.querySelector(".drag-area");
 
 // Init
 let imageEditor;
-
 
 // Event listeners
 
 // Button upload
 uploadInput.addEventListener("change", (e) => {
   if (e.target.files.length !== 1) return;
-  if (!e.target.files[0].type.startsWith('image/')) return;
+  if (!e.target.files[0].type.startsWith("image/")) return;
 
-  uploadFile(e.target.files[0])
+  uploadFile(e.target.files[0]);
 });
 
-
 // Drag'n'Drop upload
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => {
+["dragenter", "dragover", "dragleave", "drop"].forEach((e) => {
   dropArea.addEventListener(e, preventDefaults);
 });
 
 // Highlight/unhighlight area
-['dragenter', 'dragover'].forEach(e => {
+["dragenter", "dragover"].forEach((e) => {
   dropArea.addEventListener(e, () => {
-    dropArea.classList.add('active');
+    dropArea.classList.add("active");
   });
 });
 
-dropArea.addEventListener('dragleave', () => {
-  dropArea.classList.remove('active');
-})
+dropArea.addEventListener("dragleave", () => {
+  dropArea.classList.remove("active");
+});
 
-dropArea.addEventListener('drop', (e) => {
+dropArea.addEventListener("drop", (e) => {
   let dt = e.dataTransfer;
   let file = dt.files[0];
 
-  if (!file.type.startsWith('image/')) return;
+  if (!file.type.startsWith("image/")) return;
 
   uploadFile(file);
 });
 
 // Functions
 function uploadFile(file) {
-
   if (document.querySelector("#initial-upload")) {
     document.querySelector("#initial-upload").remove();
   }
@@ -921,6 +965,6 @@ function updateToolContainer(mode) {
 function preventDefaults(e) {
   e.preventDefault();
   e.stopPropagation();
-};
+}
 
 // Image editing tool with filters, cropping and painting functionality. HTML/CSS/JS

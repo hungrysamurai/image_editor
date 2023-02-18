@@ -99,6 +99,7 @@ body {
   justify-content: center;
   background-color: var(--gray);
   color: #fff;
+  overflow: hidden;
 }
 
 .drag-area {
@@ -164,6 +165,7 @@ body {
   align-items: center;
   justify-content: center;
 }
+
 .tool-container .placeholder-button svg {
   cursor: pointer;
   width: 75%;
@@ -339,7 +341,7 @@ body {
   margin-left: 4rem;
 }
 
-#reset-filters {
+.filters-apply-reset {
   flex: 1;
   margin-right: 4rem;
   background: transparent;
@@ -348,8 +350,15 @@ body {
   cursor: pointer;
 }
 
-#reset-filters svg {
-  width: 90%;
+.filters-apply-reset button {
+  background: transparent;
+  border: none;
+  padding: 0 0.25rem;
+  cursor: pointer;
+}
+
+.filters-apply-reset svg {
+  width: 80%;
 }
 
 .filter-range-slider {
@@ -454,6 +463,7 @@ body {
 }
 
 @media (max-width: 768px) {
+
   /* Control panel (top bar) */
   .control-panel-container button,
   .control-panel-container label {
@@ -593,12 +603,14 @@ body {
   .filter-range-slider label {
     width: 7%;
   }
+
   .hide {
     display: none;
   }
 }
 
 @media (max-width: 568px) {
+
   /* Control panel (top bar) */
   .control-panel-container button,
   .control-panel-container label {
