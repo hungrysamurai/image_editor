@@ -40,7 +40,6 @@ body {
 .control-panel-container .inner-container {
   margin: 0 auto;
   width: 1200px;
-  /* max-width: 100%; */
   height: 100%;
   display: flex;
   align-items: center;
@@ -63,26 +62,26 @@ body {
 }
 
 .cp-toolbox {
-  flex: 2;
+  flex: 4;
   display: flex;
   justify-content: flex-start;
   margin-left: 4rem;
 }
 
 .cp-zoom-buttons {
-  flex: 1;
+  flex: 2;
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .cp-undo-container {
-  flex: 2.5;
+  flex: 1;
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .upload-download-buttons {
-  flex: 1;
+  flex: 2;
   display: flex;
   justify-content: flex-end;
   margin-right: 4rem;
@@ -144,7 +143,6 @@ body {
 .tool-container {
   position: fixed;
   bottom: 0;
-  /* height: 15%; */
   height: 162px;
   width: 100%;
   display: flex;
@@ -173,25 +171,24 @@ body {
 }
 
 /* Cropper tool settings */
-
-.cropper-controls {
+.crop-controls {
   margin: 0 auto;
   width: 1200px;
   max-width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: space-evenly;
 }
 
-.cropper-controls button {
+.crop-controls button {
   background: transparent;
   border: none;
   padding: 0 0.25rem;
   cursor: pointer;
 }
 
-.cropper-controls svg {
+.crop-controls svg {
   display: inline-block;
   width: 90%;
 }
@@ -200,14 +197,14 @@ body {
   flex: 6;
   margin-left: 4rem;
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
 }
 
 .rotation-buttons {
   flex: 4;
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
 }
 
@@ -217,7 +214,7 @@ body {
 }
 
 /* Painting tool settings */
-.painting-controls {
+.paint-controls {
   margin: 0 auto;
   width: 1200px;
   max-width: 100%;
@@ -227,14 +224,14 @@ body {
   justify-content: space-between;
 }
 
-.painting-controls button {
+.paint-controls button {
   background: transparent;
   border: none;
   padding: 0 0.25rem;
   cursor: pointer;
 }
 
-.painting-controls svg {
+.paint-controls svg {
   display: inline-block;
   width: 90%;
 }
@@ -299,23 +296,6 @@ body {
 }
 
 /* Filters settings */
-.filters-panel {
-  position: fixed;
-  bottom: 0;
-  height: 162px;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  background: url("./gray_noise.jpg");
-  background-repeat: repeat;
-  background-size: 100px 100px;
-  border-radius: 0;
-  z-index: 6;
-  overflow: hidden;
-}
-
 .filters-controls {
   margin: 0 auto;
   width: 1200px;
@@ -346,8 +326,12 @@ body {
   margin-right: 4rem;
   background: transparent;
   border: none;
-  padding: 0 0.25rem;
+  padding: 0 0.5rem;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .filters-apply-reset button {
@@ -355,10 +339,13 @@ body {
   border: none;
   padding: 0 0.25rem;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .filters-apply-reset svg {
-  width: 80%;
+  width: 90%;
 }
 
 .filter-range-slider {
@@ -458,8 +445,187 @@ body {
   border-radius: 0.25rem;
 }
 
+/* Rotation setting */
+.rotation-controls {
+  margin: 0 auto;
+  width: 1200px;
+  max-width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rotation-controls button {
+  background: transparent;
+  border: none;
+  padding: 0 0.25rem;
+  cursor: pointer;
+}
+
+.rotation-controls svg {
+  display: inline-block;
+  width: 90%;
+}
+
+.rotation-slider-container {
+  margin-left: 4rem;
+  flex: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.rotation-slider-container label {
+  font-size: 24px;
+  margin-bottom: 3rem;
+  margin-left: 0.75rem;
+}
+
+.rotation-slider-container .slider-elements {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rotation-slider-container .slider-elements svg {
+  position: absolute;
+  top: -2rem;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.rotation-slider-container input[type="range"] {
+  -webkit-appearance: none;
+  background: transparent;
+  width: 100%;
+}
+
+.rotation-slider-container input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+}
+
+.rotation-slider-container input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+}
+
+.rotation-slider-container input[type="range"]:focus {
+  outline: none;
+}
+
+.rotation-slider-container input[type="range"]::-ms-track {
+  width: 98%;
+  cursor: pointer;
+  background: transparent;
+  border-color: transparent;
+  color: transparent;
+}
+
+.rotation-slider-container input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 2rem;
+  width: 0.5rem;
+  border-radius: 0;
+  background: var(--active-blue);
+  cursor: pointer;
+  margin-top: -1.5rem;
+  box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.88), 0px 4px 8px rgba(0, 0, 0, 0.66);
+}
+
+.rotation-slider-container input[type="range"]::-moz-range-thumb {
+  height: 2rem;
+  width: 0.5rem;
+  background: var(--active-blue);
+  border-radius: 0;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.88), 0px 4px 8px rgba(0, 0, 0, 0.66);
+}
+
+.rotation-slider-container input[type="range"]::-ms-thumb {
+  height: 2rem;
+  width: 0.5rem;
+  background: var(--active-blue);
+  cursor: pointer;
+  margin-top: -1.5rem;
+  box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.88), 0px 4px 8px rgba(0, 0, 0, 0.66);
+}
+
+.rotation-slider-container input[type="range"]::-webkit-slider-runnable-track {
+  height: 0.35rem;
+  cursor: pointer;
+  background: transparent;
+  position: relative;
+}
+
+.rotation-slider-container input[type="range"]:focus::-webkit-slider-runnable-track {
+  background: transparent;
+}
+
+.rotation-slider-container input[type="range"]::-moz-range-track {
+  height: 0.35rem;
+  cursor: pointer;
+  background: transparent;
+  border-radius: 0.25rem;
+}
+
+.rotation-slider-container input[type="range"]::-ms-track {
+  height: 0.35rem;
+  cursor: pointer;
+  background: #fff;
+  border-radius: 0.25rem;
+}
+
+.rotation-slider-buttons {
+  flex: 1;
+  margin-right: 4rem;
+  background: transparent;
+  border: none;
+  padding: 0 0.5rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
 .hide {
   display: none;
+}
+
+/* Loading screen */
+
+.loading-screen {
+  position: absolute;
+  top: 54px;
+  width: 100%;
+  height: calc(100% - 216px);
+  left: 0;
+  background-color: var(--gray);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.loading-screen.hide {
+  display: none;
+}
+
+.loading-screen svg {
+  width: 150px;
+  height: 150px;
 }
 
 @media (max-width: 768px) {
@@ -471,21 +637,11 @@ body {
   }
 
   .control-panel-container svg {
-    width: 80%;
+    width: 75%;
   }
 
   .cp-toolbox {
-    flex: 1.5;
     margin-left: 1rem;
-  }
-
-  .cp-zoom-buttons {
-    flex: 1;
-  }
-
-  .cp-undo-container {
-    flex: 2;
-    justify-content: center;
   }
 
   .upload-download-buttons {
@@ -493,7 +649,6 @@ body {
   }
 
   /* Main container (image section) */
-
   .drag-area {
     width: 100%;
     height: 100%;
@@ -504,40 +659,32 @@ body {
   }
 
   /* Cropper tool settings */
-  .cropper-controls {
+  .crop-controls {
     width: 100%;
     flex-direction: column;
     flex-wrap: wrap;
-    align-items: center;
     justify-content: center;
   }
 
-  .cropper-controls svg {
+  .crop-controls button {
+    padding: 0 0.1rem;
+  }
+
+  .crop-controls svg {
     display: inline-block;
-    height: 60px;
+    height: 64px;
   }
 
   .aspect-ratio-buttons {
-    flex: 1;
-    margin-left: 1rem;
-    padding: 0.5rem;
-    height: 48%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    margin-left: 0;
+    height: 50%;
   }
 
   .rotation-buttons {
-    flex: 1;
-    height: 48%;
-    padding: 0.5rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    height: 50%;
   }
 
   .apply-crop-container {
-    flex: 1;
     margin-right: 0;
     display: flex;
     align-items: center;
@@ -545,22 +692,24 @@ body {
   }
 
   /* Painting tool settings */
-  .painting-controls {
-    margin: 0 auto;
+  .paint-controls {
     width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
   }
 
-  .painting-controls svg {
+  .paint-controls button {
+    background: transparent;
+    border: none;
+    padding: 0 0.1rem;
+    cursor: pointer;
+  }
+
+  .paint-controls svg {
     height: 60px;
   }
 
   .painting-tools {
     flex: 2;
     margin-left: 1rem;
-    justify-content: center;
   }
 
   .painting-tools #color-picker {
@@ -570,34 +719,38 @@ body {
   }
 
   .brush-size-settings svg {
-    width: 40px;
+    width: 36px;
   }
 
   .painting-apply-container {
     flex: 1;
     margin-right: 1rem;
     margin-left: -2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
   }
 
   /* Filters controls */
-
   .filters-controls {
     width: 100%;
+    justify-content: center;
   }
 
   .filters-left-col {
     margin-left: 1rem;
   }
 
-  #reset-filters {
+  .filters-apply-reset {
+    flex: 2;
     margin-right: 1rem;
+    padding: 0 0.25rem;
   }
 
-  #reset-filters svg {
-    width: 75%;
+  .filters-apply-reset button {
+    padding: 0 0.1rem;
+  }
+
+  .filters-apply-reset svg {
+    width: 80%;
   }
 
   .filter-range-slider label {
@@ -606,6 +759,43 @@ body {
 
   .hide {
     display: none;
+  }
+
+  /* Rotation setting */
+  .rotation-controls {
+    width: 100%;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .rotation-controls button {
+    padding: 0 0.1rem;
+  }
+
+  .rotation-controls svg {
+    display: inline-block;
+    width: 80%;
+  }
+
+  .rotation-slider-container {
+    margin: 0;
+    padding: 1rem;
+  }
+
+  .rotation-slider-container label {
+    font-size: 16px;
+    margin-bottom: 2rem;
+    margin-left: 0.40rem;
+  }
+
+  .rotation-slider-buttons {
+    margin-right: 0;
+    background: transparent;
+    border: none;
+    padding: 0 0.25rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
   }
 }
 
@@ -622,31 +812,25 @@ body {
   }
 
   .cp-toolbox {
-    flex: 2;
-    margin-left: 1rem;
-  }
-
-  .cp-zoom-buttons {
-    flex: 1;
-  }
-
-  .cp-undo-container {
-    flex: 1;
-    justify-content: center;
+    margin-left: 0.5rem;
   }
 
   .upload-download-buttons {
-    margin-right: 1rem;
+    margin-right: 0.5rem;
   }
 
   /* Cropper tool settings */
-
-  .cropper-controls svg {
-    height: 50px;
+  .crop-controls svg {
+    height: 45px;
   }
 
   .aspect-ratio-buttons {
-    margin-left: 0;
+    flex: 1;
+  }
+
+  .rotation-buttons {
+    flex: 1;
+    margin-left: -2rem;
   }
 
   .apply-crop-container {
@@ -655,6 +839,7 @@ body {
     position: absolute;
     bottom: 0;
     right: 0;
+    height: 60%;
   }
 
   .apply-crop-container svg {
@@ -662,18 +847,12 @@ body {
   }
 
   /* Painting tool settings */
-
-  .painting-controls {
-    margin: 0 auto;
-    width: 100%;
-    height: 100%;
-    display: flex;
+  .paint-controls {
     flex-direction: column;
-    align-items: center;
     justify-content: center;
   }
 
-  .painting-controls svg {
+  .paint-controls svg {
     height: 50px;
   }
 
@@ -682,6 +861,8 @@ body {
     margin-left: 0;
     height: 50%;
     justify-content: center;
+    display: flex;
+    flex-wrap: wrap;
   }
 
   .painting-tools #color-picker {
@@ -690,13 +871,15 @@ body {
     margin-right: 0.5rem;
   }
 
+  .brush-size-settings {
+    margin-top: 0.5rem;
+  }
+
   .brush-size-settings svg {
     width: 25px;
   }
 
   .brush-size-settings #size-brush {
-    text-align: center;
-    display: block;
     width: 1.5rem;
     font-size: 16px;
     margin: 0 0.25rem 0.15rem 0.25rem;
@@ -707,36 +890,45 @@ body {
   }
 
   .painting-apply-container {
-    flex: 1;
-    margin-top: -2rem;
+    margin-top: -1rem;
     margin-right: 0;
     margin-left: 0;
     height: 50%;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
   }
 
   /* Filters controls */
-
-  .filters-controls {
-    width: 100%;
+  .filters-left-col,
+  .filters-right-col {
+    padding: 0.1rem;
   }
 
   .filters-left-col {
-    margin-left: 0.25rem;
+    margin-left: 0;
   }
 
-  #reset-filters {
-    margin-right: 0.25rem;
+  .filters-apply-reset {
+    flex: 2;
+    margin-right: 0rem;
+    padding: 0 0.25rem;
   }
 
-  #reset-filters svg {
-    width: 80%;
+  .filters-apply-reset button {
+    padding: 0rem;
+  }
+
+  .filters-apply-reset svg {
+    width: 75%;
   }
 
   .filter-range-slider label {
     width: 12%;
+  }
+
+  /* Rotation setting */
+  .rotation-slider-container {
+    padding: 0.25rem;
   }
 
   .hide {

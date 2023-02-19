@@ -3,13 +3,11 @@ import icons from "./icons.js";
 
 class ImageEditor {
   constructor(DOMContainers, imageFile) {
-    const [cpContainer, mainContainer, toolContainer, filtersPanel] =
-      DOMContainers;
+    const [cpContainer, mainContainer, toolContainer] = DOMContainers;
 
     this.cpContainer = cpContainer;
     this.mainContainer = mainContainer;
     this.toolContainer = toolContainer;
-    this.filtersPanel = filtersPanel;
 
     this.croppedBox;
     this.previewImage;
@@ -29,9 +27,13 @@ class ImageEditor {
     this.cropperHistory = [];
     this.croppersCounter = 0;
 
+    this.createLoader();
+    this.loading("show");
+
     this.createCropperControls();
     this.createPaintingControls();
     this.createFiltersControls();
+    this.createRotationControls();
 
     // Init cropper
     this.cropper = new Cropper(
@@ -42,6 +44,7 @@ class ImageEditor {
         modal: true,
         background: false,
         autoCrop: false,
+        autoCropArea: 1,
         ready: () => {
           // Apply filters to current preview image
           this.previewImage = this.cropper.image;
@@ -82,6 +85,8 @@ class ImageEditor {
             this.cropperHistory.push(this.initialCanvas);
             this.setUndoBtn();
           }
+
+          this.loading("hide");
         },
 
         zoom: () => {
@@ -103,11 +108,6 @@ class ImageEditor {
               top: topMargin,
             });
           }
-
-          // console.log(this.cropper.getCanvasData());
-          // console.log(this.cropper.getImageData());
-          // console.log(this.cropper.imageCenter);
-          // console.log(this.cropper.getData());
         },
       }
     );
@@ -116,6 +116,7 @@ class ImageEditor {
 
     this.addPaintingEvents();
     this.addFiltersEvents();
+    this.addRotationEvents();
   }
 
   initCPDOM() {
@@ -130,6 +131,7 @@ class ImageEditor {
     toolbox.append(this.cropperTogglerBtn);
     toolbox.append(this.createPaintingCanvasBtn);
     toolbox.append(this.filtersToggleBtn);
+    toolbox.append(this.rotationToggleBtn);
 
     inner.append(toolbox);
 
@@ -196,36 +198,31 @@ class ImageEditor {
   createCropperControls() {
     // Get cropper container in tool panel
     this.cropperControlsContainer =
-      this.toolContainer.querySelector(".cropper-controls");
+      this.toolContainer.querySelector(".crop-controls");
 
-    this.cropperControlsContainer.classList.remove("hide");
-
-    // Create cropper toggler button
+    // Create cropper button in cp
     this.cropperTogglerBtn = document.createElement("button");
     this.cropperTogglerBtn.id = "cropper-crop-btn";
-    // this.cropperTogglerBtn.textContent = "Toggle crop-mode";
     this.cropperTogglerBtn.innerHTML = icons.cropMode;
 
-    // Create cropper downlad button
-    this.cropperDownloadBtn = document.createElement("button");
-    this.cropperDownloadBtn.id = "cropper-download-btn";
-    this.cropperDownloadBtn.innerHTML = icons.downloadImage;
-
-    // Create undo button
-    this.cropperUndoBtn = document.createElement("button");
-    this.cropperUndoBtn.id = "cropper-undo-btn";
-    this.cropperUndoBtn.innerHTML = icons.undo;
-
-    // Create zoom +/- buttons
+    // Create zoom +/- buttons in cp
     this.cropperZoomInBtn = document.createElement("button");
     this.cropperZoomInBtn.id = "cropper-zoom-in-btn";
-    // this.cropperZoomInBtn.textContent = "+";
     this.cropperZoomInBtn.innerHTML = icons.zoomIn;
 
     this.cropperZoomOutBtn = document.createElement("button");
     this.cropperZoomOutBtn.id = "cropper-zoom-out-btn";
-    // this.cropperZoomOutBtn.textContent = "-";
     this.cropperZoomOutBtn.innerHTML = icons.zoomOut;
+
+    // Create undo button in cp
+    this.cropperUndoBtn = document.createElement("button");
+    this.cropperUndoBtn.id = "cropper-undo-btn";
+    this.cropperUndoBtn.innerHTML = icons.undo;
+
+    // Create cropper downlad button in cp
+    this.cropperDownloadBtn = document.createElement("button");
+    this.cropperDownloadBtn.id = "cropper-download-btn";
+    this.cropperDownloadBtn.innerHTML = icons.downloadImage;
 
     // Add buttons to tool container
     this.cropperControlsContainer.innerHTML = `
@@ -309,24 +306,20 @@ class ImageEditor {
 
   // Assign event listeners to crop stuff
   addCropperEvents() {
-    this.cropperTogglerBtn.addEventListener("click", () => {
-      if (!this.cropper.cropped) {
-        this.cropper.crop();
-      } else {
-        this.cropper.clear();
-      }
-
-      if (this.paintingCanvas) {
-        this.applyPaintingCanvas();
-      }
-    });
-
     this.cropperZoomInBtn.addEventListener("click", () => {
       this.cropper.zoom(0.1);
     });
 
     this.cropperZoomOutBtn.addEventListener("click", () => {
       this.cropper.zoom(-0.1);
+    });
+
+    this.cropperUndoBtn.addEventListener("click", () => {
+      this.undoChange();
+    });
+
+    this.cropperDownloadBtn.addEventListener("click", () => {
+      this.downloadImage();
     });
 
     this.cropperBtnAspectSquare.addEventListener("click", () => {
@@ -352,41 +345,37 @@ class ImageEditor {
       this.cropper.setAspectRatio(1.777777);
     });
     this.cropperBtnAspectFree.addEventListener("click", () => {
-      this.cropper.crop();
-      this.cropper.setAspectRatio(0);
+      if (this.cropper.cropped) {
+        this.cropper.clear();
+      } else {
+        this.cropper.options.autoCropArea = 0.75;
+        this.cropper.crop();
+        this.cropper.setAspectRatio(0);
+      }
     });
 
     this.cropperBtnRotateRight.addEventListener("click", () => {
       this.cropper.rotate(90);
-      let previous = this.cropper.getCanvasData();
-      this.applyCrop();
+      this.applyChange();
     });
 
     this.cropperBtnRotateLeft.addEventListener("click", () => {
       this.cropper.rotate(-90);
-      this.applyCrop();
+      this.applyChange();
     });
 
     this.cropperBtnReflectX.addEventListener("click", () => {
       this.cropper.scaleX(this.cropper.imageData.scaleX === -1 ? 1 : -1);
-      this.applyCrop();
+      this.applyChange();
     });
 
     this.cropperBtnReflectY.addEventListener("click", () => {
       this.cropper.scaleY(this.cropper.imageData.scaleY === -1 ? 1 : -1);
-      this.applyCrop();
+      this.applyChange();
     });
 
     this.cropperBtnApply.addEventListener("click", () => {
-      this.applyCrop();
-    });
-
-    this.cropperUndoBtn.addEventListener("click", () => {
-      this.undoCrop();
-    });
-
-    this.cropperDownloadBtn.addEventListener("click", () => {
-      this.downloadImage();
+      this.applyChange();
     });
   }
 
@@ -394,12 +383,11 @@ class ImageEditor {
   createPaintingControls() {
     // Get painting container in tool panel
     this.paintingControlsContainer =
-      this.toolContainer.querySelector(".painting-controls");
+      this.toolContainer.querySelector(".paint-controls");
 
-    // Create painting toggler button
+    // Create paint button in cp
     this.createPaintingCanvasBtn = document.createElement("button");
     this.createPaintingCanvasBtn.id = "create-drawing-canvas";
-    // this.createPaintingCanvasBtn.textContent = "Toggle canvas";
     this.createPaintingCanvasBtn.innerHTML = icons.paintingMode;
 
     // Add buttons to tool container
@@ -434,12 +422,6 @@ class ImageEditor {
       `;
 
     // Init buttons
-    this.applyPaintingCanvasBtn = this.paintingControlsContainer.querySelector(
-      "#apply-drawing-canvas"
-    );
-    this.clearPaintingCanvasBtn = this.paintingControlsContainer.querySelector(
-      "#clear-drawing-canvas"
-    );
     this.colorPicker =
       this.paintingControlsContainer.querySelector("#color-picker");
     this.increaseBrushSize =
@@ -452,26 +434,17 @@ class ImageEditor {
       this.paintingControlsContainer.querySelector("#painting-brush");
     this.eraserModeBtn =
       this.paintingControlsContainer.querySelector("#eraser-brush");
+
+    this.applyPaintingCanvasBtn = this.paintingControlsContainer.querySelector(
+      "#apply-drawing-canvas"
+    );
+    this.clearPaintingCanvasBtn = this.paintingControlsContainer.querySelector(
+      "#clear-drawing-canvas"
+    );
   }
 
   // Assign event listeners to painting stuff
   addPaintingEvents() {
-    this.createPaintingCanvasBtn.addEventListener("click", () => {
-      if (!this.paintingCanvas) {
-        // Disable cropper
-        this.cropper.clear();
-        this.cropper.disable();
-
-        this.createPaintingCanvas();
-      } else {
-        this.paintingCanvas.remove();
-        this.paintingCanvas = undefined;
-
-        // Enable cropper
-        this.cropper.enable();
-      }
-    });
-
     this.applyPaintingCanvasBtn.addEventListener("click", () => {
       this.applyPaintingCanvas();
     });
@@ -481,12 +454,11 @@ class ImageEditor {
   createFiltersControls() {
     // Get container in filters panel
     this.filterControlsContainer =
-      this.filtersPanel.querySelector(".filters-controls");
+      this.toolContainer.querySelector(".filters-controls");
 
-    // Create filters toggler button
+    // Create filters button in cp
     this.filtersToggleBtn = document.createElement("button");
     this.filtersToggleBtn.id = "toggle-filters-panel";
-    // this.filtersToggleBtn.textContent = "Filters";
     this.filtersToggleBtn.innerHTML = icons.filtersMode;
 
     // Create filters controls in DOM
@@ -556,11 +528,83 @@ class ImageEditor {
 
     this.resetFiltersBtn.addEventListener("click", () => {
       this.resetFilters();
-      this.applyFilters(this.previewImage);
-      this.applyFilters(this.croppedBox);
     });
 
-    this.applyFiltersBtn.addEventListener("click", () => {});
+    this.applyFiltersBtn.addEventListener("click", () => {
+      this.applyChange(true);
+    });
+  }
+
+  createRotationControls() {
+    // Get rotation container in tool panel
+    this.rotationControlsContainer =
+      this.toolContainer.querySelector(".rotation-controls");
+
+    // Create rotation button in cp
+    this.rotationToggleBtn = document.createElement("button");
+    this.rotationToggleBtn.id = "toggle-rotation-panel";
+    this.rotationToggleBtn.innerHTML = icons.rotationMode;
+
+    this.rotationControlsContainer.innerHTML = `
+    <div class="rotation-slider-container">
+      <label for="rotation-slider"><span id="rotation-value">0</span>°</label>
+      <div class="slider-elements">
+      <input type="range" value="0" min="-180" max="180" id="rotation-slider" />
+      ${icons.rotationRuler}
+      </div>
+      </div>
+      <div class="rotation-slider-buttons">
+      <button id="reset-rotation-btn">${icons.rotationReset}</button>
+      <button id="apply-rotation-btn">${icons.rotationApply}</button>
+      </div>
+      `;
+
+    // Init
+    this.imageRotationSlider =
+      this.rotationControlsContainer.querySelector("#rotation-slider");
+    this.imageRotationSliderReset =
+      this.rotationControlsContainer.querySelector("#reset-rotation-btn");
+    this.imageRotationSliderApply =
+      this.rotationControlsContainer.querySelector("#apply-rotation-btn");
+    this.imageRotationValue =
+      this.rotationControlsContainer.querySelector("#rotation-value");
+  }
+
+  addRotationEvents() {
+    this.imageRotationSlider.addEventListener("input", (e) => {
+      this.cropper.options.autoCropArea = 0.5;
+      this.cropper.setAspectRatio(0);
+
+      this.cropper.rotateTo(e.target.value);
+      this.imageRotationValue.textContent = e.target.value;
+
+      this.cropper.crop();
+    });
+
+    this.imageRotationSliderReset.addEventListener("click", () => {
+      this.resetRotation();
+    });
+
+    this.imageRotationSliderApply.addEventListener("click", () => {
+      this.applyRotation();
+    });
+  }
+
+  applyRotation() {
+    if (!this.cropper.cropped) {
+      this.cropper.crop();
+      this.cropper.setAspectRatio(0);
+    }
+    this.applyChange();
+
+    this.resetRotation();
+  }
+
+  resetRotation() {
+    this.imageRotationValue.textContent = 0;
+    this.cropper.rotateTo(0);
+    this.imageRotationSlider.value = 0;
+    this.cropper.clear();
   }
 
   applyFilters(element) {
@@ -586,6 +630,8 @@ class ImageEditor {
         this.filtersState[filterRange.id] = 0;
       }
     });
+    this.applyFilters(this.previewImage);
+    this.applyFilters(this.croppedBox);
   }
 
   setUndoBtn() {
@@ -616,9 +662,9 @@ class ImageEditor {
         let url = URL.createObjectURL(blob);
         newImage.src = url;
 
-        // newImage.onload = () => {
-        //   URL.revokeObjectURL(url);
-        // };
+        newImage.onload = () => {
+          this.loading("hide");
+        };
 
         this.cropper.replace(newImage.src);
       },
@@ -627,29 +673,62 @@ class ImageEditor {
     );
   }
 
-  applyCrop() {
+  createLoader() {
+    this.loadingScreen = document.createElement("div");
+    this.loadingScreen.classList.add("loading-screen");
+    this.loadingScreen.classList.add("hide");
+
+    this.loadingScreen.innerHTML = icons.loadingSpinner;
+    this.mainContainer.insertAdjacentElement("beforebegin", this.loadingScreen);
+  }
+
+  loading(action) {
+    if (action === "hide") {
+      this.loadingScreen.classList.add("hide");
+    } else if (action === "show") {
+      this.loadingScreen.classList.remove("hide");
+    }
+  }
+
+  applyChange(filters) {
+    this.loading("show");
+
     let nextCanvas = this.cropper.getCroppedCanvas({
       minWidth: 256,
       minHeight: 256,
       maxWidth: 4096,
       maxHeight: 4096,
     });
+    // this.loadingScreen(false);
+    if (filters) {
+      // Draw all current filters on canvas
+      let ctx = nextCanvas.getContext("2d");
+      ctx.filter = this.applyFilters();
+      ctx.drawImage(nextCanvas, 0, 0);
+
+      // Reset filters after drawing
+      this.resetFilters();
+    }
 
     this.saveCanvas(nextCanvas);
     this.canvasReplace(nextCanvas);
   }
 
-  undoCrop() {
+  undoChange() {
+    this.loading("show");
     if (this.cropperHistory.length === 1) {
       this.canvasReplace(this.initialCanvas);
       this.setUndoBtn();
+      this.resetFilters();
     } else if (this.cropperHistory.length === 2) {
       this.cropperHistory.pop();
       this.canvasReplace(this.initialCanvas);
       this.setUndoBtn();
+      this.resetFilters();
     } else {
       let previous = this.loadCanvas();
       this.canvasReplace(previous);
+      this.resetFilters();
     }
   }
 
@@ -662,7 +741,7 @@ class ImageEditor {
     ctx.drawImage(canvas, 0, 0);
 
     let result = canvas.toDataURL("image/jpeg");
-    console.log(ctx);
+
     const createEl = document.createElement("a");
     createEl.href = result;
     createEl.download = "download-this-canvas";
@@ -772,7 +851,6 @@ class ImageEditor {
     });
 
     paintingCanvas.addEventListener("mousemove", (e) => {
-      console.log(e.type);
       if (isPressed) {
         if (isEraser) {
           ctx.globalCompositeOperation = "destination-out";
@@ -832,9 +910,10 @@ class ImageEditor {
 
   // Save painting canvas and merge it with base canvas
   applyPaintingCanvas() {
-    if (!this.paintingCanvas) return;
+    this.loading("show");
 
     this.cropper.enable();
+
     // Get base canvas
     let baseCanvas = this.cropper.clear().getCroppedCanvas();
 
@@ -870,9 +949,15 @@ class ImageEditor {
 const cpContainer = document.querySelector(".control-panel-container");
 const mainContainer = document.querySelector(".main-container");
 const toolContainer = document.querySelector(".tool-container");
-const filtersPanel = document.querySelector(".filters-panel");
 
-const DOMContainers = [cpContainer, mainContainer, toolContainer, filtersPanel];
+const DOMContainers = [cpContainer, mainContainer, toolContainer];
+
+const toolContainers = [
+  toolContainer.querySelector(".crop-controls"),
+  toolContainer.querySelector(".paint-controls"),
+  toolContainer.querySelector(".filters-controls"),
+  toolContainer.querySelector(".rotation-controls"),
+];
 
 // Upload input element
 const uploadInput = document.querySelector("#upload-input");
@@ -882,6 +967,7 @@ const dropArea = document.querySelector(".drag-area");
 
 // Init
 let imageEditor;
+let currentMode;
 
 // Event listeners
 
@@ -920,8 +1006,9 @@ dropArea.addEventListener("drop", (e) => {
 
 // Functions
 function uploadFile(file) {
-  if (document.querySelector("#initial-upload")) {
-    document.querySelector("#initial-upload").remove();
+  // Initially delete upload button
+  if (document.querySelector(".placeholder-button")) {
+    document.querySelector(".placeholder-button").remove();
   }
 
   mainContainer.innerHTML = "";
@@ -929,36 +1016,58 @@ function uploadFile(file) {
 
   imageEditor = new ImageEditor(DOMContainers, file);
 
-  imageEditor.filtersToggleBtn.addEventListener("click", () => {
-    filtersPanel.classList.toggle("hide");
-  });
-
   imageEditor.cropperTogglerBtn.addEventListener("click", () => {
-    updateToolContainer("crop");
+    activateMode("crop");
   });
 
   imageEditor.createPaintingCanvasBtn.addEventListener("click", () => {
-    if (!imageEditor.paintingCanvas) {
-      updateToolContainer("crop");
-    } else {
-      updateToolContainer("paint");
-    }
+    activateMode("paint");
+  });
+
+  imageEditor.filtersToggleBtn.addEventListener("click", () => {
+    activateMode("filters");
+  });
+
+  imageEditor.rotationToggleBtn.addEventListener("click", () => {
+    activateMode("rotation");
   });
 
   imageEditor.applyPaintingCanvasBtn.addEventListener("click", () => {
-    updateToolContainer("crop");
+    activateMode("crop");
   });
 
-  updateToolContainer("crop");
+  activateMode("crop");
 }
 
-function updateToolContainer(mode) {
-  if (mode === "crop") {
-    imageEditor.cropperControlsContainer.className = "cropper-controls";
-    imageEditor.paintingControlsContainer.className = "painting-controls hide";
-  } else if (mode === "paint") {
-    imageEditor.cropperControlsContainer.className = "cropper-controls hide";
-    imageEditor.paintingControlsContainer.className = "painting-controls";
+function activateMode(mode) {
+  if (currentMode === mode) return;
+
+  if (currentMode === "paint" && imageEditor.paintingCanvas) {
+    imageEditor.cropper.enable();
+    imageEditor.paintingCanvas.remove();
+    imageEditor.paintingCanvas = undefined;
+  }
+
+  if (currentMode === "filters") {
+    imageEditor.resetFilters();
+  }
+
+  if (currentMode === "rotation") {
+    imageEditor.resetRotation();
+  }
+
+  currentMode = mode;
+
+  // Activate proper panel in DOM
+  toolContainers.forEach((container) => {
+    container.classList.add("hide");
+  });
+  document.querySelector(`.${mode}-controls`).classList.remove("hide");
+
+  if (mode === "paint") {
+    imageEditor.cropper.clear();
+    imageEditor.cropper.disable();
+    imageEditor.createPaintingCanvas();
   }
 }
 
@@ -966,5 +1075,3 @@ function preventDefaults(e) {
   e.preventDefault();
   e.stopPropagation();
 }
-
-// Image editing tool with filters, cropping and painting functionality. HTML/CSS/JS
