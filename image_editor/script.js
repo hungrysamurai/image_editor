@@ -202,7 +202,7 @@ class ImageEditor {
 
     // Create cropper button in cp
     this.cropperTogglerBtn = document.createElement("button");
-    this.cropperTogglerBtn.id = "cropper-crop-btn";
+    this.cropperTogglerBtn.id = "crop-mode";
     this.cropperTogglerBtn.innerHTML = icons.cropMode;
 
     // Create zoom +/- buttons in cp
@@ -387,7 +387,7 @@ class ImageEditor {
 
     // Create paint button in cp
     this.createPaintingCanvasBtn = document.createElement("button");
-    this.createPaintingCanvasBtn.id = "create-drawing-canvas";
+    this.createPaintingCanvasBtn.id = "paint-mode";
     this.createPaintingCanvasBtn.innerHTML = icons.paintingMode;
 
     // Add buttons to tool container
@@ -458,7 +458,7 @@ class ImageEditor {
 
     // Create filters button in cp
     this.filtersToggleBtn = document.createElement("button");
-    this.filtersToggleBtn.id = "toggle-filters-panel";
+    this.filtersToggleBtn.id = "filters-mode";
     this.filtersToggleBtn.innerHTML = icons.filtersMode;
 
     // Create filters controls in DOM
@@ -542,7 +542,7 @@ class ImageEditor {
 
     // Create rotation button in cp
     this.rotationToggleBtn = document.createElement("button");
-    this.rotationToggleBtn.id = "toggle-rotation-panel";
+    this.rotationToggleBtn.id = "rotation-mode";
     this.rotationToggleBtn.innerHTML = icons.rotationMode;
 
     this.rotationControlsContainer.innerHTML = `
@@ -1016,6 +1016,11 @@ function uploadFile(file) {
 
   imageEditor = new ImageEditor(DOMContainers, file);
 
+  initEvents();
+  activateMode("crop");
+}
+
+function initEvents() {
   imageEditor.cropperTogglerBtn.addEventListener("click", () => {
     activateMode("crop");
   });
@@ -1035,8 +1040,6 @@ function uploadFile(file) {
   imageEditor.applyPaintingCanvasBtn.addEventListener("click", () => {
     activateMode("crop");
   });
-
-  activateMode("crop");
 }
 
 function activateMode(mode) {
@@ -1063,6 +1066,16 @@ function activateMode(mode) {
     container.classList.add("hide");
   });
   document.querySelector(`.${mode}-controls`).classList.remove("hide");
+
+  // Update icons in cp
+  imageEditor.cpContainer
+    .querySelectorAll(".cp-toolbox button")
+    .forEach((button) => {
+      button.classList.remove("active");
+      if (button.id === `${mode}-mode`) {
+        button.classList.add("active");
+      }
+    });
 
   if (mode === "paint") {
     imageEditor.cropper.clear();
