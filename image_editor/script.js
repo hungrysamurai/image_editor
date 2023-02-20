@@ -14,6 +14,20 @@ class ImageEditor {
 
     this.paintingCanvas;
 
+    // Set name of file
+    this.imageName = imageFile.name.substring(0, imageFile.name.length - 4);
+
+    this.imageFormats = [
+      ['image/jpeg', 0.3, icons.formatJPEG30],
+      ['image/jpeg', 0.5, icons.formatJPEG50],
+      ['image/jpeg', 0.8, icons.formatJPEG80],
+      ['image/jpeg', 1.0, icons.formatJPEG100],
+      ['image/png', 1, icons.formatPNG],
+      ['image/webp', 1, icons.formatWEBP]
+    ];
+
+    this.currentImageFormatIndex = 3;
+
     this.filtersState = {
       brightness: 100,
       contrast: 100,
@@ -120,6 +134,36 @@ class ImageEditor {
     this.addPaintingEvents();
     this.addFiltersEvents();
     this.addRotationEvents();
+
+    this.setImageFormat(imageFile.type);
+  }
+
+  setImageFormat(type) {
+    let index;
+
+    this.imageFormats.forEach((format, i) => {
+      if (format[0] === type) {
+        index = i;
+      }
+    });
+
+    if (index) {
+      this.currentImageFormatIndex = index;
+    } else {
+      this.currentImageFormatIndex = 3;
+    }
+
+    this.imageFormatBtn.innerHTML = this.imageFormats[this.currentImageFormatIndex][2];
+
+  }
+
+  updateImageFormat() {
+    this.currentImageFormatIndex++;
+    if (this.currentImageFormatIndex > this.imageFormats.length - 1) {
+      this.currentImageFormatIndex = 0;
+    }
+
+    this.imageFormatBtn.innerHTML = this.imageFormats[this.currentImageFormatIndex][2];
   }
 
   initCPDOM() {
@@ -147,7 +191,7 @@ class ImageEditor {
 
     inner.append(zoomButtons);
 
-    // Add undo buttons
+    // Add undo button
     const undoContainer = document.createElement("div");
     undoContainer.classList.add("cp-undo-container");
 
@@ -165,6 +209,7 @@ class ImageEditor {
     this.uploadNewImgBtn.setAttribute("for", "upload-input");
     this.uploadNewImgBtn.innerHTML = icons.uploadNewImage;
 
+    uploadDownloadBtns.append(this.imageFormatBtn);
     uploadDownloadBtns.append(this.cropperDownloadBtn);
     uploadDownloadBtns.append(this.uploadNewImgBtn);
 
@@ -221,6 +266,11 @@ class ImageEditor {
     this.cropperUndoBtn = document.createElement("button");
     this.cropperUndoBtn.id = "cropper-undo-btn";
     this.cropperUndoBtn.innerHTML = icons.undo;
+
+    // Create format button in cp
+    this.imageFormatBtn = document.createElement('button');
+    this.imageFormatBtn.id = "cropper-format-btn";
+    this.imageFormatBtn.innerHTML = icons.formatJPEG100;
 
     // Create cropper downlad button in cp
     this.cropperDownloadBtn = document.createElement("button");
@@ -320,6 +370,10 @@ class ImageEditor {
     this.cropperUndoBtn.addEventListener("click", () => {
       this.undoChange();
     });
+
+    this.imageFormatBtn.addEventListener('click', () => {
+      this.updateImageFormat()
+    })
 
     this.cropperDownloadBtn.addEventListener("click", () => {
       this.downloadImage();
@@ -673,8 +727,8 @@ class ImageEditor {
 
         this.cropper.replace(newImage.src);
       },
-      "image/jpeg",
-      1
+      this.imageFormats[this.currentImageFormatIndex][0],
+      this.imageFormats[this.currentImageFormatIndex][1]
     );
   }
 
@@ -690,8 +744,12 @@ class ImageEditor {
   loading(action) {
     if (action === "hide") {
       this.loadingScreen.classList.add("hide");
+      this.cpContainer.style.pointerEvents = 'auto'
+      this.toolContainer.style.pointerEvents = 'auto'
     } else if (action === "show") {
       this.loadingScreen.classList.remove("hide");
+      this.cpContainer.style.pointerEvents = 'none';
+      this.toolContainer.style.pointerEvents = 'none';
     }
   }
 
@@ -738,18 +796,20 @@ class ImageEditor {
   }
 
   downloadImage() {
+
     let canvas = this.cropper.getCroppedCanvas();
     const ctx = canvas.getContext("2d");
 
     ctx.filter = this.applyFilters();
-
     ctx.drawImage(canvas, 0, 0);
 
-    let result = canvas.toDataURL("image/jpeg");
+    let result = canvas.toDataURL(
+      this.imageFormats[this.currentImageFormatIndex][0],
+      this.imageFormats[this.currentImageFormatIndex][1]);
 
     const createEl = document.createElement("a");
     createEl.href = result;
-    createEl.download = "download-this-canvas";
+    createEl.download = this.imageName;
     createEl.click();
     createEl.remove();
   }
@@ -1059,7 +1119,6 @@ function initEvents() {
     activateMode("crop");
   });
 
-  console.log(imageEditor);
 }
 
 function activateMode(mode) {

@@ -63,13 +63,12 @@ body {
 
 /* Active state */
 .control-panel-container .active svg path {
-  fill: #4090EF;
+  fill: #4090ef;
 }
 
 .control-panel-container .active svg {
-  filter: drop-shadow(0px 0px 7px #4090EF);
+  filter: drop-shadow(0px 0px 7px #4090ef);
 }
-
 
 .cp-toolbox {
   flex: 4;
@@ -91,7 +90,7 @@ body {
 }
 
 .upload-download-buttons {
-  flex: 2;
+  flex: 3;
   display: flex;
   justify-content: flex-end;
   margin-right: 4rem;
@@ -582,7 +581,8 @@ body {
   position: relative;
 }
 
-.rotation-slider-container input[type="range"]:focus::-webkit-slider-runnable-track {
+.rotation-slider-container
+  input[type="range"]:focus::-webkit-slider-runnable-track {
   background: transparent;
 }
 
@@ -643,7 +643,6 @@ body {
 }
 
 @media (max-width: 768px) {
-
   /* Control panel (top bar) */
   .control-panel-container button,
   .control-panel-container label {
@@ -803,7 +802,7 @@ body {
   .rotation-slider-container label {
     font-size: 16px;
     margin-bottom: 2rem;
-    margin-left: 0.40rem;
+    margin-left: 0.4rem;
   }
 
   .rotation-slider-buttons {
@@ -818,7 +817,6 @@ body {
 }
 
 @media (max-width: 568px) {
-
   /* Control panel (top bar) */
   .control-panel-container button,
   .control-panel-container label {
