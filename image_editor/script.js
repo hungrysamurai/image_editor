@@ -93,6 +93,7 @@ class ImageEditor {
           // Enable/disable zoom/move mode
           if (this.cropper.canvasData.width > this.cropper.zoomOutWidth) {
             this.cropper.setDragMode("move");
+            this.setZoombuttonsState('both-active');
           } else {
             this.cropper.setDragMode("none");
 
@@ -107,6 +108,8 @@ class ImageEditor {
             this.cropper.setCanvasData({
               top: topMargin,
             });
+
+            this.setZoombuttonsState('full-out');
           }
         },
       }
@@ -634,11 +637,13 @@ class ImageEditor {
     this.applyFilters(this.croppedBox);
   }
 
-  setUndoBtn() {
-    if (this.cropperHistory.length === 1) {
+  setUndoBtn(paintMode) {
+    if (this.cropperHistory.length === 1 || paintMode) {
       this.cropperUndoBtn.disabled = true;
+      this.cropperUndoBtn.style.opacity = 0.5;
     } else {
       this.cropperUndoBtn.disabled = false;
+      this.cropperUndoBtn.style.opacity = 1;
     }
   }
 
@@ -942,6 +947,19 @@ class ImageEditor {
     // Destroy current painting canvas
     this.paintingCanvas.remove();
     this.paintingCanvas = undefined;
+    this.setZoombuttonsState('both-active');
+  }
+
+  setZoombuttonsState(state) {
+    if (state === 'full-out') {
+      this.cropperZoomOutBtn.style.opacity = 0.5;
+    } else if (state === 'paint') {
+      this.cropperZoomOutBtn.style.opacity = 0.5;
+      this.cropperZoomInBtn.style.opacity = 0.5;
+    } else if (state === 'both-active') {
+      this.cropperZoomOutBtn.style.opacity = 1;
+      this.cropperZoomInBtn.style.opacity = 1;
+    }
   }
 }
 
@@ -1040,6 +1058,8 @@ function initEvents() {
   imageEditor.applyPaintingCanvasBtn.addEventListener("click", () => {
     activateMode("crop");
   });
+
+  console.log(imageEditor);
 }
 
 function activateMode(mode) {
@@ -1049,6 +1069,7 @@ function activateMode(mode) {
     imageEditor.cropper.enable();
     imageEditor.paintingCanvas.remove();
     imageEditor.paintingCanvas = undefined;
+    imageEditor.setZoombuttonsState('both-active');
   }
 
   if (currentMode === "filters") {
@@ -1081,6 +1102,8 @@ function activateMode(mode) {
     imageEditor.cropper.clear();
     imageEditor.cropper.disable();
     imageEditor.createPaintingCanvas();
+    imageEditor.setZoombuttonsState('paint');
+    imageEditor.setUndoBtn(true);
   }
 }
 
