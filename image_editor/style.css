@@ -63,11 +63,11 @@ body {
 
 /* Active state */
 .control-panel-container .active svg path {
-  fill: #4090ef;
+  fill: var(--active-blue);
 }
 
 .control-panel-container .active svg {
-  filter: drop-shadow(0px 0px 7px #4090ef);
+  filter: drop-shadow(0px 0px 7px var(--active-blue));
 }
 
 .cp-toolbox {
@@ -213,6 +213,14 @@ body {
   align-items: center;
 }
 
+.aspect-ratio-buttons button.active svg path {
+  fill: var(--active-blue);
+}
+
+.aspect-ratio-buttons button.active svg {
+  filter: drop-shadow(0px 0px 7px var(--active-blue) f);
+}
+
 .rotation-buttons {
   flex: 4;
   display: flex;
@@ -255,6 +263,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-start;
+}
+
+.painting-tools button.active svg path {
+  fill: var(--active-blue);
+}
+
+.painting-tools button.active svg {
+  filter: drop-shadow(0px 0px 7px var(--active-blue));
 }
 
 .painting-tools #color-picker {

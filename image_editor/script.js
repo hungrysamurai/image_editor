@@ -175,10 +175,10 @@ class ImageEditor {
     const toolbox = document.createElement("div");
     toolbox.classList.add("cp-toolbox");
 
-    toolbox.append(this.cropperTogglerBtn);
-    toolbox.append(this.createPaintingCanvasBtn);
-    toolbox.append(this.filtersToggleBtn);
-    toolbox.append(this.rotationToggleBtn);
+    toolbox.append(this.cropModeBtn);
+    toolbox.append(this.paintModeBtn);
+    toolbox.append(this.filtersModeBtn);
+    toolbox.append(this.rotationModeBtn);
 
     inner.append(toolbox);
 
@@ -249,9 +249,9 @@ class ImageEditor {
       this.toolContainer.querySelector(".crop-controls");
 
     // Create cropper button in cp
-    this.cropperTogglerBtn = document.createElement("button");
-    this.cropperTogglerBtn.id = "crop-mode";
-    this.cropperTogglerBtn.innerHTML = icons.cropMode;
+    this.cropModeBtn = document.createElement("button");
+    this.cropModeBtn.id = "crop-mode";
+    this.cropModeBtn.innerHTML = icons.cropMode;
 
     // Create zoom +/- buttons in cp
     this.cropperZoomInBtn = document.createElement("button");
@@ -412,11 +412,13 @@ class ImageEditor {
     });
 
     this.cropperBtnRotateRight.addEventListener("click", () => {
+      this.cropper.clear();
       this.cropper.rotate(90);
       this.applyChange();
     });
 
     this.cropperBtnRotateLeft.addEventListener("click", () => {
+      this.cropper.clear();
       this.cropper.rotate(-90);
       this.applyChange();
     });
@@ -443,9 +445,9 @@ class ImageEditor {
       this.toolContainer.querySelector(".paint-controls");
 
     // Create paint button in cp
-    this.createPaintingCanvasBtn = document.createElement("button");
-    this.createPaintingCanvasBtn.id = "paint-mode";
-    this.createPaintingCanvasBtn.innerHTML = icons.paintingMode;
+    this.paintModeBtn = document.createElement("button");
+    this.paintModeBtn.id = "paint-mode";
+    this.paintModeBtn.innerHTML = icons.paintingMode;
 
     // Add buttons to tool container
     this.paintingControlsContainer.innerHTML = ` 
@@ -514,9 +516,9 @@ class ImageEditor {
       this.toolContainer.querySelector(".filters-controls");
 
     // Create filters button in cp
-    this.filtersToggleBtn = document.createElement("button");
-    this.filtersToggleBtn.id = "filters-mode";
-    this.filtersToggleBtn.innerHTML = icons.filtersMode;
+    this.filtersModeBtn = document.createElement("button");
+    this.filtersModeBtn.id = "filters-mode";
+    this.filtersModeBtn.innerHTML = icons.filtersMode;
 
     // Create filters controls in DOM
     this.filterControlsContainer.innerHTML = `
@@ -598,9 +600,9 @@ class ImageEditor {
       this.toolContainer.querySelector(".rotation-controls");
 
     // Create rotation button in cp
-    this.rotationToggleBtn = document.createElement("button");
-    this.rotationToggleBtn.id = "rotation-mode";
-    this.rotationToggleBtn.innerHTML = icons.rotationMode;
+    this.rotationModeBtn = document.createElement("button");
+    this.rotationModeBtn.id = "rotation-mode";
+    this.rotationModeBtn.innerHTML = icons.rotationMode;
 
     this.rotationControlsContainer.innerHTML = `
     <div class="rotation-slider-container">
@@ -1095,33 +1097,93 @@ function uploadFile(file) {
   imageEditor = new ImageEditor(DOMContainers, file);
 
   initEvents();
-  activateMode("crop");
+  activateMode("crop", true);
 }
 
 function initEvents() {
-  imageEditor.cropperTogglerBtn.addEventListener("click", () => {
+  // Tools
+  const aspectRatioBtns = imageEditor.cropperControlsContainer.querySelector('.aspect-ratio-buttons').querySelectorAll('button');
+  const rotateReflectBtns = imageEditor.cropperControlsContainer.querySelector('.rotation-buttons').querySelectorAll('button');
+
+  const paintingBrush = imageEditor.brushModeBtn;
+  const eraserBrush = imageEditor.eraserModeBtn;
+
+
+  // Mode switching events
+  imageEditor.cropModeBtn.addEventListener("click", () => {
     activateMode("crop");
+    removeToolActiveStates(aspectRatioBtns);
   });
 
-  imageEditor.createPaintingCanvasBtn.addEventListener("click", () => {
+  imageEditor.paintModeBtn.addEventListener("click", () => {
     activateMode("paint");
+    removeToolActiveStates(aspectRatioBtns);
   });
 
-  imageEditor.filtersToggleBtn.addEventListener("click", () => {
+  imageEditor.filtersModeBtn.addEventListener("click", () => {
     activateMode("filters");
+    removeToolActiveStates(aspectRatioBtns);
   });
 
-  imageEditor.rotationToggleBtn.addEventListener("click", () => {
+  imageEditor.rotationModeBtn.addEventListener("click", () => {
     activateMode("rotation");
+    removeToolActiveStates(aspectRatioBtns);
   });
 
   imageEditor.applyPaintingCanvasBtn.addEventListener("click", () => {
     activateMode("crop");
   });
 
+  // Undo behaviour
+  imageEditor.cropperUndoBtn.addEventListener('click', () => {
+    removeToolActiveStates(aspectRatioBtns);
+  })
+
+  // Crop tools events
+  aspectRatioBtns.forEach(button => {
+    button.addEventListener('click', (e) => {
+      const currentBtn = e.currentTarget;
+
+      removeToolActiveStates(aspectRatioBtns);
+      if (currentBtn.id === 'cropper-aspect-free-btn') {
+        if (!imageEditor.cropper.cropped) {
+          currentBtn.classList.toggle('active');
+        }
+      } else {
+        currentBtn.classList.add('active');
+      }
+    });
+  });
+
+  // Apply crop
+  imageEditor.cropperBtnApply.addEventListener('click', () => {
+    removeToolActiveStates(aspectRatioBtns);
+  });
+
+  // Rotation/reflection buttons behaviour
+  rotateReflectBtns.forEach(button => {
+    button.addEventListener('click', () => {
+      removeToolActiveStates(aspectRatioBtns);
+    });
+  });
+
+  // Eraser tool
+  eraserBrush.addEventListener('click', () => {
+    eraserBrush.classList.add('active');
+    paintingBrush.classList.remove('active');
+  });
+
+  paintingBrush.addEventListener('click', () => {
+    setPaintBrush();
+  });
 }
 
-function activateMode(mode) {
+function activateMode(mode, newFile) {
+
+  if (newFile) {
+    imageEditor.cropModeBtn.classList.add("active");
+  }
+
   if (currentMode === mode) return;
 
   if (currentMode === "paint" && imageEditor.paintingCanvas) {
@@ -1129,6 +1191,7 @@ function activateMode(mode) {
     imageEditor.paintingCanvas.remove();
     imageEditor.paintingCanvas = undefined;
     imageEditor.setZoombuttonsState('both-active');
+    imageEditor.setUndoBtn(false);
   }
 
   if (currentMode === "filters") {
@@ -1163,10 +1226,21 @@ function activateMode(mode) {
     imageEditor.createPaintingCanvas();
     imageEditor.setZoombuttonsState('paint');
     imageEditor.setUndoBtn(true);
+
+    setPaintBrush();
   }
 }
 
 function preventDefaults(e) {
   e.preventDefault();
   e.stopPropagation();
+}
+
+function removeToolActiveStates(elements) {
+  elements.forEach(btn => btn.classList.remove('active'));
+}
+
+function setPaintBrush() {
+  imageEditor.brushModeBtn.classList.add('active');
+  imageEditor.eraserModeBtn.classList.remove('active');
 }
