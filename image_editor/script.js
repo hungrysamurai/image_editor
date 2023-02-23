@@ -1041,6 +1041,7 @@ const toolContainers = [
 
 // Upload input element
 const uploadInput = document.querySelector("#upload-input");
+const initUploadLabel = document.querySelector("#initial-upload");
 
 // Drag'n'Drop input element
 const dropArea = document.querySelector(".drag-area");
@@ -1176,6 +1177,8 @@ function initEvents() {
   paintingBrush.addEventListener('click', () => {
     setPaintBrush();
   });
+
+  addCPAnimationsEvents()
 }
 
 function activateMode(mode, newFile) {
@@ -1243,4 +1246,183 @@ function removeToolActiveStates(elements) {
 function setPaintBrush() {
   imageEditor.brushModeBtn.classList.add('active');
   imageEditor.eraserModeBtn.classList.remove('active');
+}
+
+
+// Animation events
+
+// Placeholder btn
+initUploadLabel.addEventListener('mouseenter', function () {
+  animateElTopBottom(this.querySelector('#arrow'), 0, -10);
+});
+
+initUploadLabel.addEventListener('mouseleave', function () {
+  animateElTopBottom(this.querySelector('#arrow'), -10, 0)
+});
+
+initUploadLabel.addEventListener('click', function () {
+  animateElTopBottom(this.querySelector('#arrow'), -10, -125)
+});
+
+// Animation funcions
+
+function addCPAnimationsEvents() {
+
+  // Formats Btn
+  imageEditor.imageFormatBtn.addEventListener('mouseenter', function () {
+    animateElZoom(this.querySelector('svg'), 1, 1.3);
+  });
+
+  imageEditor.imageFormatBtn.addEventListener('mouseleave', function () {
+    animateElZoom(this.querySelector('svg'), 1.3, 1)
+  });
+
+  // Download Btn
+  imageEditor.cropperDownloadBtn.addEventListener('mouseenter', function () {
+    animateElTopBottom(this.querySelector('#arrow'), 0, 2);
+  });
+
+  imageEditor.cropperDownloadBtn.addEventListener('mouseleave', function () {
+    animateElTopBottom(this.querySelector('#arrow'), 2, 0)
+  });
+
+  // Upload Btn
+  imageEditor.uploadNewImgBtn.addEventListener('mouseenter', function () {
+    animateElTopBottom(this.querySelector('#arrow'), 0, -5);
+  });
+
+  imageEditor.uploadNewImgBtn.addEventListener('mouseleave', function () {
+    animateElTopBottom(this.querySelector('#arrow'), -5, 0)
+  });
+
+  // Undo Btn
+  imageEditor.cropperUndoBtn.addEventListener('mouseenter', function () {
+    animateElRotation(this.querySelector('svg'), 0, -30, 0.6);
+  });
+
+  imageEditor.cropperUndoBtn.addEventListener('click', function () {
+    animateElRotation(this.querySelector('svg'), -30, 0, 0.6);
+  });
+
+  imageEditor.cropperUndoBtn.addEventListener('mouseleave', function () {
+    animateElRotation(this.querySelector('svg'), -30, 0, 0.6);
+  });
+
+  // Zoom out Btn
+  imageEditor.cropperZoomOutBtn.addEventListener('mouseenter', function () {
+    animateElZoom(this.querySelector('svg'), 1, 0.8);
+  });
+
+  imageEditor.cropperZoomOutBtn.addEventListener('mouseleave', function () {
+    animateElZoom(this.querySelector('svg'), 0.8, 1);
+  });
+
+  // Zoom in Btn
+  imageEditor.cropperZoomInBtn.addEventListener('mouseenter', function () {
+    animateElZoom(this.querySelector('svg'), 1, 1.2);
+  });
+
+  imageEditor.cropperZoomInBtn.addEventListener('mouseleave', function () {
+    animateElZoom(this.querySelector('svg'), 1.2, 1);
+  });
+
+  // Rotation Mode btn
+  imageEditor.rotationModeBtn.addEventListener('mouseenter', function () {
+    gsap.set(this.querySelector('#arrow'), { transformOrigin: 'center' });
+    animateElLeftRight(this.querySelector('#left-half'), 0, -2);
+    animateElLeftRight(this.querySelector('#right-half'), 0, 2);
+    animateElRotation(this.querySelector('#arrow'), 0, 10);
+  });
+
+  imageEditor.rotationModeBtn.addEventListener('mouseleave', function () {
+    animateElLeftRight(this.querySelector('#left-half'), -2, 0);
+    animateElLeftRight(this.querySelector('#right-half'), 2, 0);
+    animateElRotation(this.querySelector('#arrow'), 10, 0);
+  });
+
+  // Filters Mode btn
+  imageEditor.filtersModeBtn.addEventListener('mouseenter', function () {
+    animateElLeftRight(this.querySelector('#top_control'), 0, -5);
+    animateElLeftRight(this.querySelector('#middle_control'), 0, 3);
+    animateElLeftRight(this.querySelector('#bottom_control'), 0, -2);
+  });
+
+  imageEditor.filtersModeBtn.addEventListener('mouseleave', function () {
+    animateElLeftRight(this.querySelector('#top_control'), -5, 0);
+    animateElLeftRight(this.querySelector('#middle_control'), 3, 0);
+    animateElLeftRight(this.querySelector('#bottom_control'), -2, 0);
+  });
+
+  // Painting Mode btn
+  imageEditor.paintModeBtn.addEventListener('mouseenter', function () {
+    gsap.set(this.querySelector('#paint_brush'), { transformOrigin: 'right right' });
+    animateElRotation(this.querySelector('#paint_brush'), 0, 10);
+  });
+
+  imageEditor.paintModeBtn.addEventListener('mouseleave', function () {
+    animateElRotation(this.querySelector('#paint_brush'), 10, 0);
+  });
+
+  // Crop Mode btn
+  imageEditor.cropModeBtn.addEventListener('mouseenter', function () {
+    gsap.set(this.querySelector('#crop_grid'), { transformOrigin: 'center center' });
+    gsap.set(this.querySelector('#outer'), { transformOrigin: 'center center' });
+
+    animateElZoom(this.querySelector('#crop_grid'), 1, 1.30);
+    animateElZoom(this.querySelector('#outer'), 1, 1.25, 1, 1, 0);
+  });
+
+  imageEditor.cropModeBtn.addEventListener('mouseleave', function () {
+    animateElZoom(this.querySelector('#crop_grid'), 1.30, 1);
+    animateElZoom(this.querySelector('#outer'), 1.25, 1, 1, 0, 1);
+  });
+}
+
+
+
+
+function animateElTopBottom(el, startPos, endPos) {
+  gsap.fromTo(el,
+    { y: startPos },
+    {
+      y: endPos,
+      duration: 1,
+      ease: "elastic.out(1,0.4)"
+    });
+}
+
+function animateElLeftRight(el, startPos, endPos) {
+  gsap.fromTo(el,
+    { x: startPos },
+    {
+      x: endPos,
+      duration: 1,
+      ease: "elastic.out(1,0.4)"
+    });
+}
+
+function animateElZoom(el, startRatio, endRatio, easeRatio = 0.4, opacityStart = 1, opacityEnd = 1) {
+  gsap.fromTo(el,
+    {
+      scaleX: startRatio,
+      scaleY: startRatio,
+      opacity: opacityStart
+    },
+    {
+      scaleX: endRatio,
+      scaleY: endRatio,
+      opacity: opacityEnd,
+      duration: 1,
+      ease: `elastic.out(1,${easeRatio})`
+    });
+}
+
+function animateElRotation(el, startPos, endPos, easeRatio = 0.4) {
+  gsap.fromTo(el,
+    { rotation: startPos },
+    {
+      rotation: endPos,
+      duration: 1,
+      ease: `elastic.out(1,${easeRatio})`
+    });
 }

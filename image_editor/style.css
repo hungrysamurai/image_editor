@@ -23,6 +23,10 @@ body {
   font-family: "Inter", sans-serif;
 }
 
+svg {
+  overflow: visible;
+}
+
 /* Control panel (top bar) */
 .control-panel-container {
   position: absolute;
@@ -64,6 +68,7 @@ body {
 /* Active state */
 .control-panel-container .active svg path {
   fill: var(--active-blue);
+  stroke: none;
 }
 
 .control-panel-container .active svg {
@@ -218,7 +223,7 @@ body {
 }
 
 .aspect-ratio-buttons button.active svg {
-  filter: drop-shadow(0px 0px 7px var(--active-blue) f);
+  filter: drop-shadow(0px 0px 7px var(--active-blue));
 }
 
 .rotation-buttons {
