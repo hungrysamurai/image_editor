@@ -18,12 +18,12 @@ class ImageEditor {
     this.imageName = imageFile.name.substring(0, imageFile.name.length - 4);
 
     this.imageFormats = [
-      ['image/jpeg', 0.3, icons.formatJPEG30],
-      ['image/jpeg', 0.5, icons.formatJPEG50],
-      ['image/jpeg', 0.8, icons.formatJPEG80],
-      ['image/jpeg', 1.0, icons.formatJPEG100],
-      ['image/png', 1, icons.formatPNG],
-      ['image/webp', 1, icons.formatWEBP]
+      ["image/jpeg", 0.3, icons.formatJPEG30],
+      ["image/jpeg", 0.5, icons.formatJPEG50],
+      ["image/jpeg", 0.8, icons.formatJPEG80],
+      ["image/jpeg", 1.0, icons.formatJPEG100],
+      ["image/png", 1, icons.formatPNG],
+      ["image/webp", 1, icons.formatWEBP],
     ];
 
     this.currentImageFormatIndex = 3;
@@ -107,7 +107,7 @@ class ImageEditor {
           // Enable/disable zoom/move mode
           if (this.cropper.canvasData.width > this.cropper.zoomOutWidth) {
             this.cropper.setDragMode("move");
-            this.setZoombuttonsState('both-active');
+            this.setZoombuttonsState("both-active");
           } else {
             this.cropper.setDragMode("none");
 
@@ -123,7 +123,7 @@ class ImageEditor {
               top: topMargin,
             });
 
-            this.setZoombuttonsState('full-out');
+            this.setZoombuttonsState("full-out");
           }
         },
       }
@@ -153,8 +153,8 @@ class ImageEditor {
       this.currentImageFormatIndex = 3;
     }
 
-    this.imageFormatBtn.innerHTML = this.imageFormats[this.currentImageFormatIndex][2];
-
+    this.imageFormatBtn.innerHTML =
+      this.imageFormats[this.currentImageFormatIndex][2];
   }
 
   updateImageFormat() {
@@ -163,7 +163,8 @@ class ImageEditor {
       this.currentImageFormatIndex = 0;
     }
 
-    this.imageFormatBtn.innerHTML = this.imageFormats[this.currentImageFormatIndex][2];
+    this.imageFormatBtn.innerHTML =
+      this.imageFormats[this.currentImageFormatIndex][2];
   }
 
   initCPDOM() {
@@ -268,7 +269,7 @@ class ImageEditor {
     this.cropperUndoBtn.innerHTML = icons.undo;
 
     // Create format button in cp
-    this.imageFormatBtn = document.createElement('button');
+    this.imageFormatBtn = document.createElement("button");
     this.imageFormatBtn.id = "cropper-format-btn";
     this.imageFormatBtn.innerHTML = icons.formatJPEG100;
 
@@ -371,9 +372,9 @@ class ImageEditor {
       this.undoChange();
     });
 
-    this.imageFormatBtn.addEventListener('click', () => {
-      this.updateImageFormat()
-    })
+    this.imageFormatBtn.addEventListener("click", () => {
+      this.updateImageFormat();
+    });
 
     this.cropperDownloadBtn.addEventListener("click", () => {
       this.downloadImage();
@@ -468,6 +469,9 @@ class ImageEditor {
      <button id="eraser-brush">
      ${icons.eraser}
      </button>
+     <button id="blur-brush">
+     ${icons.eraser}
+     </button>
     </div>
 
     <div class="painting-apply-container">
@@ -494,6 +498,10 @@ class ImageEditor {
     this.eraserModeBtn =
       this.paintingControlsContainer.querySelector("#eraser-brush");
 
+    // Blur btn
+    this.blurModeBtn =
+      this.paintingControlsContainer.querySelector("#blur-brush");
+
     this.applyPaintingCanvasBtn = this.paintingControlsContainer.querySelector(
       "#apply-drawing-canvas"
     );
@@ -506,6 +514,10 @@ class ImageEditor {
   addPaintingEvents() {
     this.applyPaintingCanvasBtn.addEventListener("click", () => {
       this.applyPaintingCanvas();
+    });
+
+    this.blurModeBtn.addEventListener("click", () => {
+      this.createBlurCanvas();
     });
   }
 
@@ -746,12 +758,12 @@ class ImageEditor {
   loading(action) {
     if (action === "hide") {
       this.loadingScreen.classList.add("hide");
-      this.cpContainer.style.pointerEvents = 'auto'
-      this.toolContainer.style.pointerEvents = 'auto'
+      this.cpContainer.style.pointerEvents = "auto";
+      this.toolContainer.style.pointerEvents = "auto";
     } else if (action === "show") {
       this.loadingScreen.classList.remove("hide");
-      this.cpContainer.style.pointerEvents = 'none';
-      this.toolContainer.style.pointerEvents = 'none';
+      this.cpContainer.style.pointerEvents = "none";
+      this.toolContainer.style.pointerEvents = "none";
     }
   }
 
@@ -798,7 +810,6 @@ class ImageEditor {
   }
 
   downloadImage() {
-
     let canvas = this.cropper.getCroppedCanvas();
     const ctx = canvas.getContext("2d");
 
@@ -807,7 +818,8 @@ class ImageEditor {
 
     let result = canvas.toDataURL(
       this.imageFormats[this.currentImageFormatIndex][0],
-      this.imageFormats[this.currentImageFormatIndex][1]);
+      this.imageFormats[this.currentImageFormatIndex][1]
+    );
 
     const createEl = document.createElement("a");
     createEl.href = result;
@@ -958,6 +970,43 @@ class ImageEditor {
     });
   }
 
+  createBlurCanvas() {
+    if (!this.paintingCanvas) return;
+
+    // Create canvas element
+    let blurCanvas = document.createElement("canvas");
+
+    // Set canvas element styles
+    blurCanvas.style.position = "absolute";
+    blurCanvas.style.left = `${this.cropper.getCanvasData().left}px`;
+    blurCanvas.style.top = `${this.cropper.getCanvasData().top}px`;
+    blurCanvas.style.zIndex = 0;
+    blurCanvas.style.overflow = "hidden";
+
+    blurCanvas.height = this.previewImage.height;
+    blurCanvas.width = this.previewImage.width;
+
+    const blurCtx = blurCanvas.getContext("2d");
+
+    // Get base canvas
+    let baseCanvas = this.cropper.clear().getCroppedCanvas();
+
+    // Draw all current filters on base canvas
+    let baseCtx = baseCanvas.getContext("2d");
+    baseCtx.filter = "blur(12px)";
+    baseCtx.drawImage(baseCanvas, 0, 0);
+
+    blurCtx.drawImage(
+      baseCanvas,
+      0,
+      0,
+      this.paintingCanvas.width,
+      this.paintingCanvas.height
+    );
+
+    this.mainContainer.insertAdjacentElement("afterbegin", blurCanvas);
+  }
+
   // Drawing methods
   drawCircle(ctx, color, size, x, y) {
     ctx.beginPath();
@@ -1009,16 +1058,16 @@ class ImageEditor {
     // Destroy current painting canvas
     this.paintingCanvas.remove();
     this.paintingCanvas = undefined;
-    this.setZoombuttonsState('both-active');
+    this.setZoombuttonsState("both-active");
   }
 
   setZoombuttonsState(state) {
-    if (state === 'full-out') {
+    if (state === "full-out") {
       this.cropperZoomOutBtn.style.opacity = 0.5;
-    } else if (state === 'paint') {
+    } else if (state === "paint") {
       this.cropperZoomOutBtn.style.opacity = 0.5;
       this.cropperZoomInBtn.style.opacity = 0.5;
-    } else if (state === 'both-active') {
+    } else if (state === "both-active") {
       this.cropperZoomOutBtn.style.opacity = 1;
       this.cropperZoomInBtn.style.opacity = 1;
     }
@@ -1103,12 +1152,15 @@ function uploadFile(file) {
 
 function initEvents() {
   // Tools
-  const aspectRatioBtns = imageEditor.cropperControlsContainer.querySelector('.aspect-ratio-buttons').querySelectorAll('button');
-  const rotateReflectBtns = imageEditor.cropperControlsContainer.querySelector('.rotation-buttons').querySelectorAll('button');
+  const aspectRatioBtns = imageEditor.cropperControlsContainer
+    .querySelector(".aspect-ratio-buttons")
+    .querySelectorAll("button");
+  const rotateReflectBtns = imageEditor.cropperControlsContainer
+    .querySelector(".rotation-buttons")
+    .querySelectorAll("button");
 
   const paintingBrush = imageEditor.brushModeBtn;
   const eraserBrush = imageEditor.eraserModeBtn;
-
 
   // Mode switching events
   imageEditor.cropModeBtn.addEventListener("click", () => {
@@ -1136,53 +1188,52 @@ function initEvents() {
   });
 
   // Undo behaviour
-  imageEditor.cropperUndoBtn.addEventListener('click', () => {
+  imageEditor.cropperUndoBtn.addEventListener("click", () => {
     removeToolActiveStates(aspectRatioBtns);
-  })
+  });
 
   // Crop tools events
-  aspectRatioBtns.forEach(button => {
-    button.addEventListener('click', (e) => {
+  aspectRatioBtns.forEach((button) => {
+    button.addEventListener("click", (e) => {
       const currentBtn = e.currentTarget;
 
       removeToolActiveStates(aspectRatioBtns);
-      if (currentBtn.id === 'cropper-aspect-free-btn') {
+      if (currentBtn.id === "cropper-aspect-free-btn") {
         if (!imageEditor.cropper.cropped) {
-          currentBtn.classList.toggle('active');
+          currentBtn.classList.toggle("active");
         }
       } else {
-        currentBtn.classList.add('active');
+        currentBtn.classList.add("active");
       }
     });
   });
 
   // Apply crop
-  imageEditor.cropperBtnApply.addEventListener('click', () => {
+  imageEditor.cropperBtnApply.addEventListener("click", () => {
     removeToolActiveStates(aspectRatioBtns);
   });
 
   // Rotation/reflection buttons behaviour
-  rotateReflectBtns.forEach(button => {
-    button.addEventListener('click', () => {
+  rotateReflectBtns.forEach((button) => {
+    button.addEventListener("click", () => {
       removeToolActiveStates(aspectRatioBtns);
     });
   });
 
   // Eraser tool
-  eraserBrush.addEventListener('click', () => {
-    eraserBrush.classList.add('active');
-    paintingBrush.classList.remove('active');
+  eraserBrush.addEventListener("click", () => {
+    eraserBrush.classList.add("active");
+    paintingBrush.classList.remove("active");
   });
 
-  paintingBrush.addEventListener('click', () => {
+  paintingBrush.addEventListener("click", () => {
     setPaintBrush();
   });
 
-  addCPAnimationsEvents()
+  addCPAnimationsEvents();
 }
 
 function activateMode(mode, newFile) {
-
   if (newFile) {
     imageEditor.cropModeBtn.classList.add("active");
   }
@@ -1193,7 +1244,7 @@ function activateMode(mode, newFile) {
     imageEditor.cropper.enable();
     imageEditor.paintingCanvas.remove();
     imageEditor.paintingCanvas = undefined;
-    imageEditor.setZoombuttonsState('both-active');
+    imageEditor.setZoombuttonsState("both-active");
     imageEditor.setUndoBtn(false);
   }
 
@@ -1227,7 +1278,7 @@ function activateMode(mode, newFile) {
     imageEditor.cropper.clear();
     imageEditor.cropper.disable();
     imageEditor.createPaintingCanvas();
-    imageEditor.setZoombuttonsState('paint');
+    imageEditor.setZoombuttonsState("paint");
     imageEditor.setUndoBtn(true);
 
     setPaintBrush();
@@ -1240,189 +1291,401 @@ function preventDefaults(e) {
 }
 
 function removeToolActiveStates(elements) {
-  elements.forEach(btn => btn.classList.remove('active'));
+  elements.forEach((btn) => btn.classList.remove("active"));
 }
 
 function setPaintBrush() {
-  imageEditor.brushModeBtn.classList.add('active');
-  imageEditor.eraserModeBtn.classList.remove('active');
+  imageEditor.brushModeBtn.classList.add("active");
+  imageEditor.eraserModeBtn.classList.remove("active");
 }
-
 
 // Animation events
 
 // Placeholder btn
-initUploadLabel.addEventListener('mouseenter', function () {
-  animateElTopBottom(this.querySelector('#arrow'), 0, -10);
+initUploadLabel.addEventListener("mouseenter", function () {
+  animateElTopBottom(this.querySelector("#arrow"), 0, -10);
 });
 
-initUploadLabel.addEventListener('mouseleave', function () {
-  animateElTopBottom(this.querySelector('#arrow'), -10, 0)
+initUploadLabel.addEventListener("mouseleave", function () {
+  animateElTopBottom(this.querySelector("#arrow"), -10, 0);
 });
 
-initUploadLabel.addEventListener('click', function () {
-  animateElTopBottom(this.querySelector('#arrow'), -10, -125)
+initUploadLabel.addEventListener("click", function () {
+  animateElTopBottom(this.querySelector("#arrow"), -10, -125);
 });
 
 // Animation funcions
 
 function addCPAnimationsEvents() {
-
   // Formats Btn
-  imageEditor.imageFormatBtn.addEventListener('mouseenter', function () {
-    animateElZoom(this.querySelector('svg'), 1, 1.3);
+  imageEditor.imageFormatBtn.addEventListener("mouseenter", function () {
+    animateElZoom(this.querySelector("svg"), 1, 1.3);
   });
 
-  imageEditor.imageFormatBtn.addEventListener('mouseleave', function () {
-    animateElZoom(this.querySelector('svg'), 1.3, 1)
+  imageEditor.imageFormatBtn.addEventListener("mouseleave", function () {
+    animateElZoom(this.querySelector("svg"), 1.3, 1);
   });
 
   // Download Btn
-  imageEditor.cropperDownloadBtn.addEventListener('mouseenter', function () {
-    animateElTopBottom(this.querySelector('#arrow'), 0, 2);
+  imageEditor.cropperDownloadBtn.addEventListener("mouseenter", function () {
+    animateElTopBottom(this.querySelector("#arrow"), 0, 2);
   });
 
-  imageEditor.cropperDownloadBtn.addEventListener('mouseleave', function () {
-    animateElTopBottom(this.querySelector('#arrow'), 2, 0)
+  imageEditor.cropperDownloadBtn.addEventListener("mouseleave", function () {
+    animateElTopBottom(this.querySelector("#arrow"), 2, 0);
   });
 
   // Upload Btn
-  imageEditor.uploadNewImgBtn.addEventListener('mouseenter', function () {
-    animateElTopBottom(this.querySelector('#arrow'), 0, -5);
+  imageEditor.uploadNewImgBtn.addEventListener("mouseenter", function () {
+    animateElTopBottom(this.querySelector("#arrow"), 0, -5);
   });
 
-  imageEditor.uploadNewImgBtn.addEventListener('mouseleave', function () {
-    animateElTopBottom(this.querySelector('#arrow'), -5, 0)
+  imageEditor.uploadNewImgBtn.addEventListener("mouseleave", function () {
+    animateElTopBottom(this.querySelector("#arrow"), -5, 0);
   });
 
   // Undo Btn
-  imageEditor.cropperUndoBtn.addEventListener('mouseenter', function () {
-    animateElRotation(this.querySelector('svg'), 0, -30, 0.6);
+  imageEditor.cropperUndoBtn.addEventListener("mouseenter", function () {
+    animateElRotation(this.querySelector("svg"), 0, -30, 0.6);
   });
 
-  imageEditor.cropperUndoBtn.addEventListener('click', function () {
-    animateElRotation(this.querySelector('svg'), -30, 0, 0.6);
+  imageEditor.cropperUndoBtn.addEventListener("click", function () {
+    animateElRotation(this.querySelector("svg"), -30, 0, 0.6);
   });
 
-  imageEditor.cropperUndoBtn.addEventListener('mouseleave', function () {
-    animateElRotation(this.querySelector('svg'), -30, 0, 0.6);
+  imageEditor.cropperUndoBtn.addEventListener("mouseleave", function () {
+    animateElRotation(this.querySelector("svg"), -30, 0, 0.6);
   });
 
   // Zoom out Btn
-  imageEditor.cropperZoomOutBtn.addEventListener('mouseenter', function () {
-    animateElZoom(this.querySelector('svg'), 1, 0.8);
+  imageEditor.cropperZoomOutBtn.addEventListener("mouseenter", function () {
+    animateElZoom(this.querySelector("svg"), 1, 0.8);
   });
 
-  imageEditor.cropperZoomOutBtn.addEventListener('mouseleave', function () {
-    animateElZoom(this.querySelector('svg'), 0.8, 1);
+  imageEditor.cropperZoomOutBtn.addEventListener("mouseleave", function () {
+    animateElZoom(this.querySelector("svg"), 0.8, 1);
   });
 
   // Zoom in Btn
-  imageEditor.cropperZoomInBtn.addEventListener('mouseenter', function () {
-    animateElZoom(this.querySelector('svg'), 1, 1.2);
+  imageEditor.cropperZoomInBtn.addEventListener("mouseenter", function () {
+    animateElZoom(this.querySelector("svg"), 1, 1.2);
   });
 
-  imageEditor.cropperZoomInBtn.addEventListener('mouseleave', function () {
-    animateElZoom(this.querySelector('svg'), 1.2, 1);
+  imageEditor.cropperZoomInBtn.addEventListener("mouseleave", function () {
+    animateElZoom(this.querySelector("svg"), 1.2, 1);
   });
 
   // Rotation Mode btn
-  imageEditor.rotationModeBtn.addEventListener('mouseenter', function () {
-    gsap.set(this.querySelector('#arrow'), { transformOrigin: 'center' });
-    animateElLeftRight(this.querySelector('#left-half'), 0, -2);
-    animateElLeftRight(this.querySelector('#right-half'), 0, 2);
-    animateElRotation(this.querySelector('#arrow'), 0, 10);
+  imageEditor.rotationModeBtn.addEventListener("mouseenter", function () {
+    gsap.set(this.querySelector("#arrow"), { transformOrigin: "center" });
+    animateElLeftRight(this.querySelector("#left-half"), 0, -2);
+    animateElLeftRight(this.querySelector("#right-half"), 0, 2);
+    animateElRotation(this.querySelector("#arrow"), 0, 10);
   });
 
-  imageEditor.rotationModeBtn.addEventListener('mouseleave', function () {
-    animateElLeftRight(this.querySelector('#left-half'), -2, 0);
-    animateElLeftRight(this.querySelector('#right-half'), 2, 0);
-    animateElRotation(this.querySelector('#arrow'), 10, 0);
+  imageEditor.rotationModeBtn.addEventListener("mouseleave", function () {
+    animateElLeftRight(this.querySelector("#left-half"), -2, 0);
+    animateElLeftRight(this.querySelector("#right-half"), 2, 0);
+    animateElRotation(this.querySelector("#arrow"), 10, 0);
   });
 
   // Filters Mode btn
-  imageEditor.filtersModeBtn.addEventListener('mouseenter', function () {
-    animateElLeftRight(this.querySelector('#top_control'), 0, -5);
-    animateElLeftRight(this.querySelector('#middle_control'), 0, 3);
-    animateElLeftRight(this.querySelector('#bottom_control'), 0, -2);
+  imageEditor.filtersModeBtn.addEventListener("mouseenter", function () {
+    animateElLeftRight(this.querySelector("#top_control"), 0, -5);
+    animateElLeftRight(this.querySelector("#middle_control"), 0, 3);
+    animateElLeftRight(this.querySelector("#bottom_control"), 0, -2);
   });
 
-  imageEditor.filtersModeBtn.addEventListener('mouseleave', function () {
-    animateElLeftRight(this.querySelector('#top_control'), -5, 0);
-    animateElLeftRight(this.querySelector('#middle_control'), 3, 0);
-    animateElLeftRight(this.querySelector('#bottom_control'), -2, 0);
+  imageEditor.filtersModeBtn.addEventListener("mouseleave", function () {
+    animateElLeftRight(this.querySelector("#top_control"), -5, 0);
+    animateElLeftRight(this.querySelector("#middle_control"), 3, 0);
+    animateElLeftRight(this.querySelector("#bottom_control"), -2, 0);
   });
 
   // Painting Mode btn
-  imageEditor.paintModeBtn.addEventListener('mouseenter', function () {
-    gsap.set(this.querySelector('#paint_brush'), { transformOrigin: 'right right' });
-    animateElRotation(this.querySelector('#paint_brush'), 0, 10);
+  imageEditor.paintModeBtn.addEventListener("mouseenter", function () {
+    gsap.set(this.querySelector("#paint_brush"), {
+      transformOrigin: "right right",
+    });
+    animateElRotation(this.querySelector("#paint_brush"), 0, 10);
   });
 
-  imageEditor.paintModeBtn.addEventListener('mouseleave', function () {
-    animateElRotation(this.querySelector('#paint_brush'), 10, 0);
+  imageEditor.paintModeBtn.addEventListener("mouseleave", function () {
+    animateElRotation(this.querySelector("#paint_brush"), 10, 0);
   });
 
   // Crop Mode btn
-  imageEditor.cropModeBtn.addEventListener('mouseenter', function () {
-    gsap.set(this.querySelector('#crop_grid'), { transformOrigin: 'center center' });
-    gsap.set(this.querySelector('#outer'), { transformOrigin: 'center center' });
+  imageEditor.cropModeBtn.addEventListener("mouseenter", function () {
+    gsap.set(this.querySelector("#crop_grid"), {
+      transformOrigin: "center center",
+    });
+    gsap.set(this.querySelector("#outer"), {
+      transformOrigin: "center center",
+    });
 
-    animateElZoom(this.querySelector('#crop_grid'), 1, 1.30);
-    animateElZoom(this.querySelector('#outer'), 1, 1.25, 1, 1, 0);
+    animateElZoom(this.querySelector("#crop_grid"), 1, 1.3);
+    animateElZoom(this.querySelector("#outer"), 1, 1.25, 1, 1, 0);
   });
 
-  imageEditor.cropModeBtn.addEventListener('mouseleave', function () {
-    animateElZoom(this.querySelector('#crop_grid'), 1.30, 1);
-    animateElZoom(this.querySelector('#outer'), 1.25, 1, 1, 0, 1);
+  imageEditor.cropModeBtn.addEventListener("mouseleave", function () {
+    animateElZoom(this.querySelector("#crop_grid"), 1.3, 1);
+    animateElZoom(this.querySelector("#outer"), 1.25, 1, 1, 0, 1);
+  });
+
+  // Crop aspect ratio btns
+
+  // Square
+  imageEditor.cropperBtnAspectSquare.addEventListener(
+    "mouseenter",
+    function () {
+      gsap.set(this.querySelector("#grid"), {
+        transformOrigin: "center center",
+      });
+
+      animateElZoom(this.querySelector("#grid"), 1, 1.2);
+    }
+  );
+
+  imageEditor.cropperBtnAspectSquare.addEventListener(
+    "mouseleave",
+    function () {
+      animateElZoom(this.querySelector("#grid"), 1.2, 1);
+    }
+  );
+
+  // 3:4
+  imageEditor.cropperBtnAspect34.addEventListener("mouseenter", function () {
+    gsap.set(this.querySelector("#grid"), {
+      transformOrigin: "center center",
+    });
+    animateElZoom(this.querySelector("#grid"), 1, 1.2);
+  });
+
+  imageEditor.cropperBtnAspect34.addEventListener("mouseleave", function () {
+    animateElZoom(this.querySelector("#grid"), 1.2, 1);
+  });
+
+  // 4:3
+  imageEditor.cropperBtnAspect43.addEventListener("mouseenter", function () {
+    gsap.set(this.querySelector("#grid"), {
+      transformOrigin: "center center",
+    });
+    animateElZoom(this.querySelector("#grid"), 1, 1.2);
+  });
+
+  imageEditor.cropperBtnAspect43.addEventListener("mouseleave", function () {
+    animateElZoom(this.querySelector("#grid"), 1.2, 1);
+  });
+
+  // 16:9
+  imageEditor.cropperBtnAspect169.addEventListener("mouseenter", function () {
+    gsap.set(this.querySelector("#grid"), {
+      transformOrigin: "center center",
+    });
+    animateElZoom(this.querySelector("#grid"), 1, 1.2);
+  });
+
+  imageEditor.cropperBtnAspect169.addEventListener("mouseleave", function () {
+    animateElZoom(this.querySelector("#grid"), 1.2, 1);
+  });
+
+  // 9:16
+  imageEditor.cropperBtnAspect916.addEventListener("mouseenter", function () {
+    gsap.set(this.querySelector("#grid"), {
+      transformOrigin: "center center",
+    });
+    animateElZoom(this.querySelector("#grid"), 1, 1.2);
+  });
+
+  imageEditor.cropperBtnAspect916.addEventListener("mouseleave", function () {
+    animateElZoom(this.querySelector("#grid"), 1.2, 1);
+  });
+
+  // Free
+  imageEditor.cropperBtnAspectFree.addEventListener("mouseenter", function () {
+    gsap.set(this.querySelector("#grid"), {
+      transformOrigin: "center center",
+    });
+    animateElZoom(this.querySelector("#grid"), 1, 1.2);
+    animateElTopBottom(this.querySelector("#arrow_up"), 0, -5);
+    animateElTopBottom(this.querySelector("#arrow_down"), 0, 5);
+    animateElLeftRight(this.querySelector("#arrow_right"), 0, 5);
+    animateElLeftRight(this.querySelector("#arrow_left"), 0, -5);
+  });
+
+  imageEditor.cropperBtnAspectFree.addEventListener("mouseleave", function () {
+    animateElZoom(this.querySelector("#grid"), 1.2, 1);
+    animateElTopBottom(this.querySelector("#arrow_up"), -5, 0);
+    animateElTopBottom(this.querySelector("#arrow_down"), 5, 0);
+    animateElLeftRight(this.querySelector("#arrow_right"), 5, 0);
+    animateElLeftRight(this.querySelector("#arrow_left"), -5, 0);
+  });
+
+  // Rotations/Reflections btns
+
+  // 90deg
+  imageEditor.cropperBtnRotateRight.addEventListener("mouseenter", function () {
+    gsap.set(this.querySelector("#main"), {
+      transformOrigin: "center center",
+    });
+    animateElRotation(this.querySelector("#main"), 0, 90);
+    animateElTopBottom(this.querySelector("#main"), 0, 10);
+    animateElFade(this.querySelector("#top"), 1, 0);
+  });
+
+  imageEditor.cropperBtnRotateRight.addEventListener("mouseleave", function () {
+    animateElRotation(this.querySelector("#main"), 90, 0);
+    animateElTopBottom(this.querySelector("#main"), 10, 0);
+    animateElFade(this.querySelector("#top"), 0, 1);
+  });
+
+  // -90deg
+  imageEditor.cropperBtnRotateLeft.addEventListener("mouseenter", function () {
+    gsap.set(this.querySelector("#main"), {
+      transformOrigin: "center center",
+    });
+    animateElRotation(this.querySelector("#main"), 0, -90);
+    animateElTopBottom(this.querySelector("#main"), 0, 10);
+    animateElFade(this.querySelector("#top"), 1, 0);
+  });
+
+  imageEditor.cropperBtnRotateLeft.addEventListener("mouseleave", function () {
+    animateElRotation(this.querySelector("#main"), -90, 0);
+    animateElTopBottom(this.querySelector("#main"), 10, 0);
+    animateElFade(this.querySelector("#top"), 0, 1);
+  });
+
+  // Reflect X
+  imageEditor.cropperBtnReflectX.addEventListener("mouseenter", function () {
+    gsap.set(this.querySelector("svg"), {
+      transformOrigin: "center center",
+    });
+    animateElRotation(this.querySelector("svg"), 0, 180, 0.9);
+  });
+
+  imageEditor.cropperBtnReflectX.addEventListener("mouseleave", function () {
+    animateElRotation(this.querySelector("svg"), 180, 0, 0.9);
+  });
+
+  // Reflect Y
+  imageEditor.cropperBtnReflectY.addEventListener("mouseenter", function () {
+    gsap.set(this.querySelector("svg"), {
+      transformOrigin: "center center",
+    });
+    animateElRotation(this.querySelector("svg"), 0, 180, 0.9);
+  });
+
+  imageEditor.cropperBtnReflectY.addEventListener("mouseleave", function () {
+    animateElRotation(this.querySelector("svg"), 180, 0, 0.9);
+  });
+
+  // Apply crop btn
+  imageEditor.cropperBtnApply.addEventListener("mouseenter", function () {
+    animateElZoom(this.querySelector("svg"), 1, 0.8);
+  });
+
+  imageEditor.cropperBtnApply.addEventListener("mouseleave", function () {
+    animateElZoom(this.querySelector("svg"), 0.8, 1);
+  });
+
+  // Painting tools
+
+  // Brush
+  imageEditor.brushModeBtn.addEventListener("mouseenter", function () {
+    gsap.set(this.querySelector("#pencil_el"), {
+      transformOrigin: "top right",
+    });
+    animateElRotation(this.querySelector("#pencil_el"), 0, -6);
+  });
+
+  imageEditor.brushModeBtn.addEventListener("mouseleave", function () {
+    animateElRotation(this.querySelector("#pencil_el"), -6, 0);
+  });
+
+  // Eraser
+  imageEditor.eraserModeBtn.addEventListener("mouseenter", function () {
+    gsap.set(this.querySelector("#eraser_el"), {
+      transformOrigin: "top right",
+    });
+    animateElTopBottom(this.querySelector("#eraser_el"), 0, 3);
+    animateElLeftRight(this.querySelector("#eraser_el"), 0, -5);
+  });
+
+  imageEditor.eraserModeBtn.addEventListener("mouseleave", function () {
+    animateElTopBottom(this.querySelector("#eraser_el"), 3, 0);
+    animateElLeftRight(this.querySelector("#eraser_el"), -5, 0);
   });
 }
 
-
-
-
 function animateElTopBottom(el, startPos, endPos) {
-  gsap.fromTo(el,
+  gsap.fromTo(
+    el,
     { y: startPos },
     {
       y: endPos,
       duration: 1,
-      ease: "elastic.out(1,0.4)"
-    });
+      ease: "elastic.out(1,0.4)",
+    }
+  );
 }
 
 function animateElLeftRight(el, startPos, endPos) {
-  gsap.fromTo(el,
+  gsap.fromTo(
+    el,
     { x: startPos },
     {
       x: endPos,
       duration: 1,
-      ease: "elastic.out(1,0.4)"
-    });
+      ease: "elastic.out(1,0.4)",
+    }
+  );
 }
 
-function animateElZoom(el, startRatio, endRatio, easeRatio = 0.4, opacityStart = 1, opacityEnd = 1) {
-  gsap.fromTo(el,
+function animateElZoom(
+  el,
+  startRatio,
+  endRatio,
+  easeRatio = 0.4,
+  opacityStart = 1,
+  opacityEnd = 1
+) {
+  gsap.fromTo(
+    el,
     {
       scaleX: startRatio,
       scaleY: startRatio,
-      opacity: opacityStart
+      opacity: opacityStart,
     },
     {
       scaleX: endRatio,
       scaleY: endRatio,
       opacity: opacityEnd,
       duration: 1,
-      ease: `elastic.out(1,${easeRatio})`
-    });
+      ease: `elastic.out(1,${easeRatio})`,
+    }
+  );
 }
 
 function animateElRotation(el, startPos, endPos, easeRatio = 0.4) {
-  gsap.fromTo(el,
+  gsap.fromTo(
+    el,
     { rotation: startPos },
     {
       rotation: endPos,
       duration: 1,
-      ease: `elastic.out(1,${easeRatio})`
-    });
+      ease: `elastic.out(1,${easeRatio})`,
+    }
+  );
+}
+
+function animateElFade(el, start, end) {
+  gsap.fromTo(
+    el,
+    { opacity: start },
+    {
+      opacity: end,
+      duration: 0.5,
+      ease: `Expo.easeOut`,
+    }
+  );
 }

@@ -220,6 +220,7 @@ svg {
 
 .aspect-ratio-buttons button.active svg path {
   fill: var(--active-blue);
+  stroke: none;
 }
 
 .aspect-ratio-buttons button.active svg {
@@ -602,8 +603,7 @@ svg {
   position: relative;
 }
 
-.rotation-slider-container
-  input[type="range"]:focus::-webkit-slider-runnable-track {
+.rotation-slider-container input[type="range"]:focus::-webkit-slider-runnable-track {
   background: transparent;
 }
 
@@ -664,6 +664,7 @@ svg {
 }
 
 @media (max-width: 768px) {
+
   /* Control panel (top bar) */
   .control-panel-container button,
   .control-panel-container label {
@@ -838,6 +839,7 @@ svg {
 }
 
 @media (max-width: 568px) {
+
   /* Control panel (top bar) */
   .control-panel-container button,
   .control-panel-container label {
