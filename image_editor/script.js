@@ -13,6 +13,7 @@ class ImageEditor {
     this.previewImage;
 
     this.paintingCanvas;
+    this.blurCanvas;
 
     // Set name of file
     this.imageName = imageFile.name.substring(0, imageFile.name.length - 4);
@@ -470,7 +471,7 @@ class ImageEditor {
      ${icons.eraser}
      </button>
      <button id="blur-brush">
-     ${icons.eraser}
+     ${icons.blurTool}
      </button>
     </div>
 
@@ -514,10 +515,6 @@ class ImageEditor {
   addPaintingEvents() {
     this.applyPaintingCanvasBtn.addEventListener("click", () => {
       this.applyPaintingCanvas();
-    });
-
-    this.blurModeBtn.addEventListener("click", () => {
-      this.createBlurCanvas();
     });
   }
 
@@ -866,10 +863,25 @@ class ImageEditor {
     // Add brush events
     this.brushModeBtn.addEventListener("click", () => {
       isEraser = false;
+
+      if (this.blurCanvas) {
+        this.applyBlurCanvas();
+      }
     });
 
     this.eraserModeBtn.addEventListener("click", () => {
       isEraser = true;
+
+      if (this.blurCanvas) {
+        this.applyBlurCanvas();
+      }
+    });
+
+    this.blurModeBtn.addEventListener("click", () => {
+      isEraser = false;
+
+      this.createBlurCanvas(size);
+      ctx.clearRect(0, 0, paintingCanvas.width, paintingCanvas.height);
     });
 
     this.colorPicker.addEventListener(
@@ -894,6 +906,11 @@ class ImageEditor {
     });
 
     this.clearPaintingCanvasBtn.addEventListener("click", () => {
+      if (this.blurCanvas) {
+        this.clearBlurCanvas();
+        this.createBlurCanvas(size);
+      }
+
       ctx.clearRect(0, 0, paintingCanvas.width, paintingCanvas.height);
     });
 
@@ -944,6 +961,7 @@ class ImageEditor {
 
         x = x2;
         y = y2;
+        ctx.globalCompositeOperation = "source-over";
       }
     });
 
@@ -966,52 +984,167 @@ class ImageEditor {
 
         x = x2;
         y = y2;
+        ctx.globalCompositeOperation = "source-over";
       }
     });
   }
 
-  createBlurCanvas() {
-    if (!this.paintingCanvas) return;
+  createBlurCanvas(currentSize) {
+    if (this.blurCanvas) return;
 
-    // Create canvas element
-    let blurCanvas = document.createElement("canvas");
+    let sourceCanvas = document.createElement("canvas");
+    let sourceCtx = sourceCanvas.getContext("2d");
 
-    // Set canvas element styles
-    blurCanvas.style.position = "absolute";
-    blurCanvas.style.left = `${this.cropper.getCanvasData().left}px`;
-    blurCanvas.style.top = `${this.cropper.getCanvasData().top}px`;
-    blurCanvas.style.zIndex = 0;
-    blurCanvas.style.overflow = "hidden";
+    this.blurCanvas = sourceCanvas;
 
-    blurCanvas.height = this.previewImage.height;
-    blurCanvas.width = this.previewImage.width;
+    let shadowCanvas = document.createElement("canvas");
+    let shadowCtx = shadowCanvas.getContext("2d");
 
-    const blurCtx = blurCanvas.getContext("2d");
+    // Position canvas on top of painting canvas
+    sourceCanvas.style.position = "absolute";
+    sourceCanvas.style.left = `${this.cropper.getCanvasData().left}px`;
+    sourceCanvas.style.top = `${this.cropper.getCanvasData().top}px`;
+    sourceCanvas.style.zIndex = 3;
+    sourceCanvas.style.overflow = "hidden";
+
+    sourceCanvas.height = this.previewImage.height;
+    sourceCanvas.width = this.previewImage.width;
+
+    shadowCanvas.height = this.previewImage.height;
+    shadowCanvas.width = this.previewImage.width;
+
+    let blurPressed = false;
+    let size = currentSize;
 
     // Get base canvas
     let baseCanvas = this.cropper.clear().getCroppedCanvas();
-
-    // Draw all current filters on base canvas
     let baseCtx = baseCanvas.getContext("2d");
-    baseCtx.filter = "blur(12px)";
     baseCtx.drawImage(baseCanvas, 0, 0);
 
-    blurCtx.drawImage(
-      baseCanvas,
+    // Merge base with painting canvas
+    let merged = document.createElement("canvas");
+    const mergedCtx = merged.getContext("2d");
+    merged.width = baseCanvas.width;
+    merged.height = baseCanvas.height;
+
+    mergedCtx.drawImage(baseCanvas, 0, 0);
+    mergedCtx.drawImage(this.paintingCanvas, 0, 0, merged.width, merged.height);
+
+    //  Draw merged canvas on source context
+    sourceCtx.drawImage(merged, 0, 0, sourceCanvas.width, sourceCanvas.height);
+
+    // Append source canvas in front of painting canvas
+    this.mainContainer.insertAdjacentElement("afterbegin", sourceCanvas);
+
+    // Increase/Decrease size
+    this.increaseBrushSize.addEventListener("click", () => {
+      size += 5;
+      if (size > 50) {
+        size = 50;
+      }
+      this.brushSizeEl.textContent = size;
+    });
+
+    this.decreaseBrushSize.addEventListener("click", () => {
+      size -= 5;
+      if (size < 5) {
+        size = 5;
+      }
+      this.brushSizeEl.textContent = size;
+    });
+
+    // Blur paint functionality
+    sourceCanvas.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      shadowCtx.clearRect(0, 0, shadowCanvas.width, shadowCanvas.height);
+      blurPressed = true;
+    });
+
+    sourceCanvas.addEventListener("mousemove", (e) => {
+      if (!blurPressed) {
+        return;
+      }
+
+      sourceCtx.fillStyle = "rgba(0, 0, 0, 0.01)";
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      let x = e.offsetX;
+      let y = e.offsetY;
+      this.drawCircle(sourceCtx, "rgba(0, 0, 0, 0.01)", size, x, y);
+      this.drawCircle(shadowCtx, undefined, size, x, y);
+    });
+
+    sourceCanvas.addEventListener("mouseup", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      blurPressed = false;
+      shadowCtx.save();
+      shadowCtx.globalCompositeOperation = "source-in";
+      shadowCtx.filter = "blur(10px)";
+
+      shadowCtx.drawImage(
+        merged,
+        0,
+        0,
+        sourceCanvas.width,
+        sourceCanvas.height
+      );
+
+      shadowCtx.restore();
+      sourceCtx.save();
+
+      sourceCtx.drawImage(shadowCanvas, 0, 0);
+      sourceCtx.globalCompositeOperation = "destination-over";
+      sourceCtx.drawImage(
+        merged,
+        0,
+        0,
+        sourceCanvas.width,
+        sourceCanvas.height
+      );
+      sourceCtx.restore();
+    });
+
+    sourceCanvas.addEventListener("mouseout", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      blurPressed = false;
+    });
+  }
+
+  applyBlurCanvas() {
+    if (!this.blurCanvas) return;
+
+    let mainCxt = this.paintingCanvas.getContext("2d");
+
+    mainCxt.drawImage(
+      this.blurCanvas,
       0,
       0,
       this.paintingCanvas.width,
       this.paintingCanvas.height
     );
 
-    this.mainContainer.insertAdjacentElement("afterbegin", blurCanvas);
+    this.clearBlurCanvas();
+  }
+
+  clearBlurCanvas() {
+    this.blurCanvas.remove();
+    this.blurCanvas = undefined;
   }
 
   // Drawing methods
   drawCircle(ctx, color, size, x, y) {
     ctx.beginPath();
     ctx.arc(x, y, size, 0, Math.PI * 2);
-    ctx.fillStyle = color;
+    if (color) {
+      ctx.fillStyle = color;
+    }
+    ctx.closePath();
     ctx.fill();
   }
 
@@ -1027,7 +1160,7 @@ class ImageEditor {
   // Save painting canvas and merge it with base canvas
   applyPaintingCanvas() {
     this.loading("show");
-
+    this.applyBlurCanvas();
     this.cropper.enable();
 
     // Get base canvas
@@ -1161,6 +1294,7 @@ function initEvents() {
 
   const paintingBrush = imageEditor.brushModeBtn;
   const eraserBrush = imageEditor.eraserModeBtn;
+  const blurBrush = imageEditor.blurModeBtn;
 
   // Mode switching events
   imageEditor.cropModeBtn.addEventListener("click", () => {
@@ -1224,6 +1358,14 @@ function initEvents() {
   eraserBrush.addEventListener("click", () => {
     eraserBrush.classList.add("active");
     paintingBrush.classList.remove("active");
+    blurBrush.classList.remove("active");
+  });
+
+  // Blur tool
+  blurBrush.addEventListener("click", () => {
+    eraserBrush.classList.remove("active");
+    paintingBrush.classList.remove("active");
+    blurBrush.classList.add("active");
   });
 
   paintingBrush.addEventListener("click", () => {
@@ -1242,6 +1384,11 @@ function activateMode(mode, newFile) {
 
   if (currentMode === "paint" && imageEditor.paintingCanvas) {
     imageEditor.cropper.enable();
+
+    if (imageEditor.blurCanvas) {
+      imageEditor.clearBlurCanvas();
+    }
+
     imageEditor.paintingCanvas.remove();
     imageEditor.paintingCanvas = undefined;
     imageEditor.setZoombuttonsState("both-active");
@@ -1297,6 +1444,7 @@ function removeToolActiveStates(elements) {
 function setPaintBrush() {
   imageEditor.brushModeBtn.classList.add("active");
   imageEditor.eraserModeBtn.classList.remove("active");
+  imageEditor.blurModeBtn.classList.remove("active");
 }
 
 // Animation events
