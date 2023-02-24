@@ -14,6 +14,8 @@ class ImageEditor {
 
     this.paintingCanvas;
     this.blurCanvas;
+    this.offScreenCanvas;
+    this.drawBackCanvas;
 
     // Set name of file
     this.imageName = imageFile.name.substring(0, imageFile.name.length - 4);
@@ -498,8 +500,6 @@ class ImageEditor {
       this.paintingControlsContainer.querySelector("#painting-brush");
     this.eraserModeBtn =
       this.paintingControlsContainer.querySelector("#eraser-brush");
-
-    // Blur btn
     this.blurModeBtn =
       this.paintingControlsContainer.querySelector("#blur-brush");
 
@@ -513,6 +513,72 @@ class ImageEditor {
 
   // Assign event listeners to painting stuff
   addPaintingEvents() {
+    // Some global variables for painting
+    this.brushColor;
+    this.brushSize;
+    this.brushIsPressed;
+    this.brushIsEraser;
+
+    this.colorPicker.value = this.brushColor;
+    this.brushSizeEl.textContent = this.brushSize;
+
+    this.colorPicker.addEventListener(
+      "change",
+      (e) => (this.brushColor = e.target.value)
+    );
+
+    this.increaseBrushSize.addEventListener("click", () => {
+      this.brushSize += 5;
+      if (this.brushSize > 50) {
+        this.brushSize = 50;
+      }
+      this.brushSizeEl.textContent = this.brushSize;
+    });
+
+    this.decreaseBrushSize.addEventListener("click", () => {
+      this.brushSize -= 5;
+      if (this.brushSize < 5) {
+        this.brushSize = 5;
+      }
+      this.brushSizeEl.textContent = this.brushSize;
+    });
+
+    this.brushModeBtn.addEventListener("click", () => {
+      if (this.blurCanvas) {
+        this.applyBlurCanvas();
+      }
+
+      this.brushIsEraser = false;
+    });
+
+    this.eraserModeBtn.addEventListener("click", () => {
+      if (this.blurCanvas) {
+        this.applyBlurCanvas();
+      }
+
+      this.brushIsEraser = true;
+    });
+
+    this.blurModeBtn.addEventListener("click", () => {
+      this.brushIsEraser = false;
+      this.createBlurCanvas();
+
+      this.paintingCanvas
+        .getContext("2d")
+        .clearRect(0, 0, this.paintingCanvas.width, this.paintingCanvas.height);
+    });
+
+    this.clearPaintingCanvasBtn.addEventListener("click", () => {
+      if (this.blurCanvas) {
+        this.clearBlurCanvas();
+        this.createBlurCanvas();
+      }
+
+      this.paintingCanvas
+        .getContext("2d")
+        .clearRect(0, 0, this.paintingCanvas.width, this.paintingCanvas.height);
+    });
+
     this.applyPaintingCanvasBtn.addEventListener("click", () => {
       this.applyPaintingCanvas();
     });
@@ -848,81 +914,25 @@ class ImageEditor {
     // Insert drawing canvas element in DOM
     this.mainContainer.insertAdjacentElement("afterbegin", paintingCanvas);
 
-    // Init brush
-    let color = "#000000";
-    let size = 10;
+    // Some global variables for painting
+    this.brushColor = "#000000";
+    this.brushSize = 10;
+    this.brushSizeEl.textContent = this.brushSize;
+    this.brushIsPressed = false;
+    this.brushIsEraser = false;
 
-    let isPressed = false;
-    let isEraser = false;
     let x;
     let y;
 
-    this.colorPicker.value = color;
-    this.brushSizeEl.textContent = size;
-
-    // Add brush events
-    this.brushModeBtn.addEventListener("click", () => {
-      isEraser = false;
-
-      if (this.blurCanvas) {
-        this.applyBlurCanvas();
-      }
-    });
-
-    this.eraserModeBtn.addEventListener("click", () => {
-      isEraser = true;
-
-      if (this.blurCanvas) {
-        this.applyBlurCanvas();
-      }
-    });
-
-    this.blurModeBtn.addEventListener("click", () => {
-      isEraser = false;
-
-      this.createBlurCanvas(size);
-      ctx.clearRect(0, 0, paintingCanvas.width, paintingCanvas.height);
-    });
-
-    this.colorPicker.addEventListener(
-      "change",
-      (e) => (color = e.target.value)
-    );
-
-    this.increaseBrushSize.addEventListener("click", () => {
-      size += 5;
-      if (size > 50) {
-        size = 50;
-      }
-      this.brushSizeEl.textContent = size;
-    });
-
-    this.decreaseBrushSize.addEventListener("click", () => {
-      size -= 5;
-      if (size < 5) {
-        size = 5;
-      }
-      this.brushSizeEl.textContent = size;
-    });
-
-    this.clearPaintingCanvasBtn.addEventListener("click", () => {
-      if (this.blurCanvas) {
-        this.clearBlurCanvas();
-        this.createBlurCanvas(size);
-      }
-
-      ctx.clearRect(0, 0, paintingCanvas.width, paintingCanvas.height);
-    });
-
     paintingCanvas.addEventListener("mousedown", (e) => {
-      isPressed = true;
+      this.brushIsPressed = true;
 
       x = e.offsetX;
       y = e.offsetY;
     });
 
     paintingCanvas.addEventListener("touchstart", (e) => {
-      isPressed = true;
+      this.brushIsPressed = true;
 
       let rect = e.target.getBoundingClientRect();
       let tx = e.targetTouches[0].pageX - rect.left;
@@ -933,22 +943,22 @@ class ImageEditor {
     });
 
     paintingCanvas.addEventListener("mouseup", () => {
-      isPressed = false;
+      this.brushIsPressed = false;
 
       x = undefined;
       y = undefined;
     });
 
     paintingCanvas.addEventListener("touchend", () => {
-      isPressed = false;
+      this.brushIsPressed = false;
 
       x = undefined;
       y = undefined;
     });
 
     paintingCanvas.addEventListener("mousemove", (e) => {
-      if (isPressed) {
-        if (isEraser) {
+      if (this.brushIsPressed) {
+        if (this.brushIsEraser) {
           ctx.globalCompositeOperation = "destination-out";
         } else {
           ctx.globalCompositeOperation = "source-over";
@@ -956,8 +966,8 @@ class ImageEditor {
 
         const x2 = e.offsetX;
         const y2 = e.offsetY;
-        this.drawCircle(ctx, color, size, x2, y2);
-        this.drawLine(ctx, color, size, x, y, x2, y2);
+        this.drawCircle(ctx, this.brushColor, this.brushSize, x2, y2);
+        this.drawLine(ctx, this.brushColor, this.brushSize, x, y, x2, y2);
 
         x = x2;
         y = y2;
@@ -966,8 +976,8 @@ class ImageEditor {
     });
 
     paintingCanvas.addEventListener("touchmove", (e) => {
-      if (isPressed) {
-        if (isEraser) {
+      if (this.brushIsPressed) {
+        if (this.brushIsEraser) {
           ctx.globalCompositeOperation = "destination-out";
         } else {
           ctx.globalCompositeOperation = "source-over";
@@ -979,8 +989,8 @@ class ImageEditor {
 
         const x2 = tx;
         const y2 = ty;
-        this.drawCircle(ctx, color, size, x2, y2);
-        this.drawLine(ctx, color, size, x, y, x2, y2);
+        this.drawCircle(ctx, this.brushColor, this.brushSize, x2, y2);
+        this.drawLine(ctx, this.brushColor, this.brushSize, x, y, x2, y2);
 
         x = x2;
         y = y2;
@@ -989,37 +999,37 @@ class ImageEditor {
     });
   }
 
-  createBlurCanvas(currentSize) {
+  createBlurCanvas() {
     if (this.blurCanvas) return;
 
-    let sourceCanvas = document.createElement("canvas");
-    let sourceCtx = sourceCanvas.getContext("2d");
+    let blurCanvas = document.createElement("canvas");
+    let blurCtx = blurCanvas.getContext("2d");
 
-    this.blurCanvas = sourceCanvas;
+    this.blurCanvas = blurCanvas;
 
-    let shadowCanvas = document.createElement("canvas");
-    let shadowCtx = shadowCanvas.getContext("2d");
+    let offScreenCanvas = document.createElement("canvas");
+    let offScreenCtx = offScreenCanvas.getContext("2d");
+
+    this.offScreenCanvas = offScreenCanvas;
 
     // Position canvas on top of painting canvas
-    sourceCanvas.style.position = "absolute";
-    sourceCanvas.style.left = `${this.cropper.getCanvasData().left}px`;
-    sourceCanvas.style.top = `${this.cropper.getCanvasData().top}px`;
-    sourceCanvas.style.zIndex = 3;
-    sourceCanvas.style.overflow = "hidden";
+    blurCanvas.style.position = "absolute";
+    blurCanvas.style.left = `${this.cropper.getCanvasData().left}px`;
+    blurCanvas.style.top = `${this.cropper.getCanvasData().top}px`;
+    blurCanvas.style.zIndex = 3;
+    blurCanvas.style.overflow = "hidden";
 
-    sourceCanvas.height = this.previewImage.height;
-    sourceCanvas.width = this.previewImage.width;
+    blurCanvas.height = this.previewImage.height;
+    blurCanvas.width = this.previewImage.width;
 
-    shadowCanvas.height = this.previewImage.height;
-    shadowCanvas.width = this.previewImage.width;
+    offScreenCanvas.height = this.previewImage.height;
+    offScreenCanvas.width = this.previewImage.width;
 
     let blurPressed = false;
-    let size = currentSize;
+    let x, y;
 
     // Get base canvas
     let baseCanvas = this.cropper.clear().getCroppedCanvas();
-    let baseCtx = baseCanvas.getContext("2d");
-    baseCtx.drawImage(baseCanvas, 0, 0);
 
     // Merge base with painting canvas
     let merged = document.createElement("canvas");
@@ -1030,86 +1040,163 @@ class ImageEditor {
     mergedCtx.drawImage(baseCanvas, 0, 0);
     mergedCtx.drawImage(this.paintingCanvas, 0, 0, merged.width, merged.height);
 
-    //  Draw merged canvas on source context
-    sourceCtx.drawImage(merged, 0, 0, sourceCanvas.width, sourceCanvas.height);
+    // Save painting progress
+    this.drawBackCanvas = document.createElement("canvas");
+    const drawBackCtx = this.drawBackCanvas.getContext("2d");
+    this.drawBackCanvas.width = this.paintingCanvas.width;
+    this.drawBackCanvas.height = this.paintingCanvas.height;
+    drawBackCtx.drawImage(
+      this.paintingCanvas,
+      0,
+      0,
+      this.drawBackCanvas.width,
+      this.drawBackCanvas.height
+    );
 
-    // Append source canvas in front of painting canvas
-    this.mainContainer.insertAdjacentElement("afterbegin", sourceCanvas);
+    //  Draw merged canvas on blur context
+    blurCtx.drawImage(merged, 0, 0, blurCanvas.width, blurCanvas.height);
 
-    // Increase/Decrease size
-    this.increaseBrushSize.addEventListener("click", () => {
-      size += 5;
-      if (size > 50) {
-        size = 50;
-      }
-      this.brushSizeEl.textContent = size;
-    });
-
-    this.decreaseBrushSize.addEventListener("click", () => {
-      size -= 5;
-      if (size < 5) {
-        size = 5;
-      }
-      this.brushSizeEl.textContent = size;
-    });
+    // Append blur canvas in front of painting canvas
+    this.mainContainer.insertAdjacentElement("afterbegin", blurCanvas);
 
     // Blur paint functionality
-    sourceCanvas.addEventListener("mousedown", (e) => {
+    blurCanvas.addEventListener("mousedown", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      shadowCtx.clearRect(0, 0, shadowCanvas.width, shadowCanvas.height);
+      offScreenCtx.clearRect(
+        0,
+        0,
+        offScreenCanvas.width,
+        offScreenCanvas.height
+      );
       blurPressed = true;
+
+      x = e.offsetX;
+      y = e.offsetY;
     });
 
-    sourceCanvas.addEventListener("mousemove", (e) => {
+    blurCanvas.addEventListener("touchstart", (e) => {
+      // e.preventDefault();
+      // e.stopPropagation();
+      console.log("touch!");
+      offScreenCtx.clearRect(
+        0,
+        0,
+        offScreenCanvas.width,
+        offScreenCanvas.height
+      );
+
+      blurPressed = true;
+
+      let rect = e.target.getBoundingClientRect();
+      let tx = e.targetTouches[0].pageX - rect.left;
+      let ty = e.targetTouches[0].pageY - rect.top;
+      // console.log(ty);
+      // console.log(tx);
+      x = tx;
+      y = ty;
+    });
+
+    blurCanvas.addEventListener("mousemove", (e) => {
       if (!blurPressed) {
         return;
       }
 
-      sourceCtx.fillStyle = "rgba(0, 0, 0, 0.01)";
-
       e.preventDefault();
       e.stopPropagation();
 
-      let x = e.offsetX;
-      let y = e.offsetY;
-      this.drawCircle(sourceCtx, "rgba(0, 0, 0, 0.01)", size, x, y);
-      this.drawCircle(shadowCtx, undefined, size, x, y);
+      const x2 = e.offsetX;
+      const y2 = e.offsetY;
+
+      this.drawCircle(blurCtx, "rgba(0, 0, 0, 0.05)", this.brushSize, x2, y2);
+      this.drawLine(
+        blurCtx,
+        "rgba(0, 0, 0, 0.05)",
+        this.brushSize,
+        x,
+        y,
+        x2,
+        y2
+      );
+
+      this.drawCircle(offScreenCtx, undefined, this.brushSize, x, y);
+      this.drawLine(offScreenCtx, undefined, this.brushSize, x, y, x2, y2);
+
+      x = x2;
+      y = y2;
     });
 
-    sourceCanvas.addEventListener("mouseup", (e) => {
+    blurCanvas.addEventListener("touchmove", (e) => {
+      if (!blurPressed) {
+        return;
+      }
+
+      let rect = e.target.getBoundingClientRect();
+      let tx = e.targetTouches[0].pageX - rect.left;
+      let ty = e.targetTouches[0].pageY - rect.top;
+      console.log(ty);
+      console.log(tx);
+      const x2 = tx;
+      const y2 = ty;
+
+      this.drawCircle(blurCtx, "rgba(0, 0, 0, 0.05)", this.brushSize, x2, y2);
+      this.drawLine(
+        blurCtx,
+        "rgba(0, 0, 0, 0.05)",
+        this.brushSize,
+        x,
+        y,
+        x2,
+        y2
+      );
+
+      this.drawCircle(offScreenCtx, undefined, this.brushSize, x, y);
+      this.drawLine(offScreenCtx, undefined, this.brushSize, x, y, x2, y2);
+
+      x = x2;
+      y = y2;
+    });
+
+    blurCanvas.addEventListener("mouseup", (e) => {
       e.preventDefault();
       e.stopPropagation();
 
       blurPressed = false;
-      shadowCtx.save();
-      shadowCtx.globalCompositeOperation = "source-in";
-      shadowCtx.filter = "blur(10px)";
+      offScreenCtx.save();
+      offScreenCtx.globalCompositeOperation = "source-in";
+      offScreenCtx.filter = "blur(10px)";
 
-      shadowCtx.drawImage(
-        merged,
-        0,
-        0,
-        sourceCanvas.width,
-        sourceCanvas.height
-      );
+      offScreenCtx.drawImage(merged, 0, 0, blurCanvas.width, blurCanvas.height);
 
-      shadowCtx.restore();
-      sourceCtx.save();
+      offScreenCtx.restore();
+      blurCtx.save();
 
-      sourceCtx.drawImage(shadowCanvas, 0, 0);
-      sourceCtx.globalCompositeOperation = "destination-over";
-      sourceCtx.drawImage(
-        merged,
-        0,
-        0,
-        sourceCanvas.width,
-        sourceCanvas.height
-      );
-      sourceCtx.restore();
+      blurCtx.drawImage(offScreenCanvas, 0, 0);
+      blurCtx.globalCompositeOperation = "destination-over";
+      blurCtx.drawImage(merged, 0, 0, blurCanvas.width, blurCanvas.height);
+      blurCtx.restore();
     });
 
-    sourceCanvas.addEventListener("mouseout", (e) => {
+    blurCanvas.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      blurPressed = false;
+      offScreenCtx.save();
+      offScreenCtx.globalCompositeOperation = "source-in";
+      offScreenCtx.filter = "blur(10px)";
+
+      offScreenCtx.drawImage(merged, 0, 0, blurCanvas.width, blurCanvas.height);
+
+      offScreenCtx.restore();
+      blurCtx.save();
+
+      blurCtx.drawImage(offScreenCanvas, 0, 0);
+      blurCtx.globalCompositeOperation = "destination-over";
+      blurCtx.drawImage(merged, 0, 0, blurCanvas.width, blurCanvas.height);
+      blurCtx.restore();
+    });
+
+    blurCanvas.addEventListener("mouseout", (e) => {
       e.preventDefault();
       e.stopPropagation();
       blurPressed = false;
@@ -1119,10 +1206,18 @@ class ImageEditor {
   applyBlurCanvas() {
     if (!this.blurCanvas) return;
 
-    let mainCxt = this.paintingCanvas.getContext("2d");
+    let paintingCanvasCtx = this.paintingCanvas.getContext("2d");
 
-    mainCxt.drawImage(
-      this.blurCanvas,
+    paintingCanvasCtx.drawImage(
+      this.drawBackCanvas,
+      0,
+      0,
+      this.paintingCanvas.width,
+      this.paintingCanvas.height
+    );
+
+    paintingCanvasCtx.drawImage(
+      this.offScreenCanvas,
       0,
       0,
       this.paintingCanvas.width,
@@ -1135,6 +1230,12 @@ class ImageEditor {
   clearBlurCanvas() {
     this.blurCanvas.remove();
     this.blurCanvas = undefined;
+
+    this.offScreenCanvas.remove();
+    this.offScreenCanvas = undefined;
+
+    this.drawBackCanvas.remove();
+    this.drawBackCanvas = undefined;
   }
 
   // Drawing methods
@@ -1152,7 +1253,9 @@ class ImageEditor {
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
-    ctx.strokeStyle = color;
+    if (color) {
+      ctx.strokeStyle = color;
+    }
     ctx.lineWidth = size * 2;
     ctx.stroke();
   }
@@ -1167,9 +1270,9 @@ class ImageEditor {
     let baseCanvas = this.cropper.clear().getCroppedCanvas();
 
     // Draw all current filters on base canvas
-    let baseCtx = baseCanvas.getContext("2d");
-    baseCtx.filter = this.applyFilters();
-    baseCtx.drawImage(baseCanvas, 0, 0);
+    // let baseCtx = baseCanvas.getContext("2d");
+    // baseCtx.filter = this.applyFilters();
+    // baseCtx.drawImage(baseCanvas, 0, 0);
 
     // Merge base with painting canvas
     let merged = document.createElement("canvas");
@@ -1186,7 +1289,7 @@ class ImageEditor {
     this.canvasReplace(merged);
 
     // Reset filters after merging
-    this.resetFilters();
+    // this.resetFilters();
 
     // Destroy current painting canvas
     this.paintingCanvas.remove();
