@@ -141,36 +141,6 @@ export default class ImageEditor {
 
     this.setImageFormat(imageFile.type);
   }
-
-  setImageFormat(type) {
-    let index;
-
-    this.imageFormats.forEach((format, i) => {
-      if (format[0] === type) {
-        index = i;
-      }
-    });
-
-    if (index) {
-      this.currentImageFormatIndex = index;
-    } else {
-      this.currentImageFormatIndex = 3;
-    }
-
-    this.imageFormatBtn.innerHTML =
-      this.imageFormats[this.currentImageFormatIndex][2];
-  }
-
-  updateImageFormat() {
-    this.currentImageFormatIndex++;
-    if (this.currentImageFormatIndex > this.imageFormats.length - 1) {
-      this.currentImageFormatIndex = 0;
-    }
-
-    this.imageFormatBtn.innerHTML =
-      this.imageFormats[this.currentImageFormatIndex][2];
-  }
-
   initCPDOM() {
     // Add inner container
     const inner = document.createElement("div");
@@ -884,6 +854,35 @@ export default class ImageEditor {
     }
   }
 
+  setImageFormat(type) {
+    let index;
+
+    this.imageFormats.forEach((format, i) => {
+      if (format[0] === type) {
+        index = i;
+      }
+    });
+
+    if (index) {
+      this.currentImageFormatIndex = index;
+    } else {
+      this.currentImageFormatIndex = 3;
+    }
+
+    this.imageFormatBtn.innerHTML =
+      this.imageFormats[this.currentImageFormatIndex][2];
+  }
+
+  updateImageFormat() {
+    this.currentImageFormatIndex++;
+    if (this.currentImageFormatIndex > this.imageFormats.length - 1) {
+      this.currentImageFormatIndex = 0;
+    }
+
+    this.imageFormatBtn.innerHTML =
+      this.imageFormats[this.currentImageFormatIndex][2];
+  }
+
   downloadImage() {
     let canvas = this.cropper.getCroppedCanvas();
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -1118,12 +1117,7 @@ export default class ImageEditor {
     blurCanvas.addEventListener("mousedown", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      // offScreenCtx.clearRect(
-      //   0,
-      //   0,
-      //   offScreenCanvas.width,
-      //   offScreenCanvas.height
-      // );
+
       blurPressed = true;
 
       x = e.offsetX;
@@ -1131,13 +1125,6 @@ export default class ImageEditor {
     });
 
     blurCanvas.addEventListener("touchstart", (e) => {
-      // offScreenCtx.clearRect(
-      //   0,
-      //   0,
-      //   offScreenCanvas.width,
-      //   offScreenCanvas.height
-      // );
-
       blurPressed = true;
 
       let rect = e.target.getBoundingClientRect();
