@@ -839,7 +839,7 @@ class ImageEditor {
       maxWidth: 4096,
       maxHeight: 4096,
     });
-    // this.loadingScreen(false);
+
     if (filters) {
       // Draw all current filters on canvas
       let ctx = nextCanvas.getContext("2d");
@@ -997,6 +997,39 @@ class ImageEditor {
         ctx.globalCompositeOperation = "source-over";
       }
     });
+
+    this.initBrushCursor(this.paintingCanvas, true);
+  }
+
+  initBrushCursor(canvas, state) {
+    if (state) {
+      canvas.addEventListener("mouseenter", () => {
+        this.brushCursor = document.createElement("div");
+        this.brushCursor.style.width = `${this.brushSize * 2}px`;
+        this.brushCursor.style.height = `${this.brushSize * 2}px`;
+        this.brushCursor.classList.add("paint-brush-cursor");
+        this.mainContainer.insertAdjacentElement(
+          "beforebegin",
+          this.brushCursor
+        );
+      });
+
+      canvas.addEventListener("mousemove", (e) => {
+        const mouseY = e.clientY - this.brushSize;
+        const mouseX = e.clientX - this.brushSize;
+        this.brushCursor.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
+      });
+
+      canvas.addEventListener("mouseleave", () => {
+        this.brushCursor.remove();
+        this.brushCursor = undefined;
+      });
+    } else {
+      if (this.brushCursor) {
+        this.brushCursor.remove();
+      }
+      this.brushCursor = undefined;
+    }
   }
 
   createBlurCanvas() {
@@ -1063,12 +1096,12 @@ class ImageEditor {
     blurCanvas.addEventListener("mousedown", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      offScreenCtx.clearRect(
-        0,
-        0,
-        offScreenCanvas.width,
-        offScreenCanvas.height
-      );
+      // offScreenCtx.clearRect(
+      //   0,
+      //   0,
+      //   offScreenCanvas.width,
+      //   offScreenCanvas.height
+      // );
       blurPressed = true;
 
       x = e.offsetX;
@@ -1076,23 +1109,19 @@ class ImageEditor {
     });
 
     blurCanvas.addEventListener("touchstart", (e) => {
-      // e.preventDefault();
-      // e.stopPropagation();
-      console.log("touch!");
-      offScreenCtx.clearRect(
-        0,
-        0,
-        offScreenCanvas.width,
-        offScreenCanvas.height
-      );
+      // offScreenCtx.clearRect(
+      //   0,
+      //   0,
+      //   offScreenCanvas.width,
+      //   offScreenCanvas.height
+      // );
 
       blurPressed = true;
 
       let rect = e.target.getBoundingClientRect();
       let tx = e.targetTouches[0].pageX - rect.left;
       let ty = e.targetTouches[0].pageY - rect.top;
-      // console.log(ty);
-      // console.log(tx);
+
       x = tx;
       y = ty;
     });
@@ -1134,8 +1163,7 @@ class ImageEditor {
       let rect = e.target.getBoundingClientRect();
       let tx = e.targetTouches[0].pageX - rect.left;
       let ty = e.targetTouches[0].pageY - rect.top;
-      console.log(ty);
-      console.log(tx);
+
       const x2 = tx;
       const y2 = ty;
 
@@ -1201,6 +1229,8 @@ class ImageEditor {
       e.stopPropagation();
       blurPressed = false;
     });
+
+    this.initBrushCursor(this.blurCanvas, true);
   }
 
   applyBlurCanvas() {
@@ -1269,11 +1299,6 @@ class ImageEditor {
     // Get base canvas
     let baseCanvas = this.cropper.clear().getCroppedCanvas();
 
-    // Draw all current filters on base canvas
-    // let baseCtx = baseCanvas.getContext("2d");
-    // baseCtx.filter = this.applyFilters();
-    // baseCtx.drawImage(baseCanvas, 0, 0);
-
     // Merge base with painting canvas
     let merged = document.createElement("canvas");
     merged.width = baseCanvas.width;
@@ -1287,9 +1312,6 @@ class ImageEditor {
     // Save merged canvas
     this.saveCanvas(merged);
     this.canvasReplace(merged);
-
-    // Reset filters after merging
-    // this.resetFilters();
 
     // Destroy current painting canvas
     this.paintingCanvas.remove();
@@ -1496,6 +1518,7 @@ function activateMode(mode, newFile) {
     imageEditor.paintingCanvas = undefined;
     imageEditor.setZoombuttonsState("both-active");
     imageEditor.setUndoBtn(false);
+    imageEditor.initBrushCursor(undefined, false);
   }
 
   if (currentMode === "filters") {
@@ -1866,6 +1889,98 @@ function addCPAnimationsEvents() {
     animateElTopBottom(this.querySelector("#eraser_el"), 3, 0);
     animateElLeftRight(this.querySelector("#eraser_el"), -5, 0);
   });
+
+  // Blur tool
+  imageEditor.blurModeBtn.addEventListener("mouseenter", function () {
+    gsap.set(this.querySelector("#blur_el"), {
+      transformOrigin: "top right",
+    });
+    animateElTopBottom(this.querySelector("#blur_el"), 0, 3);
+    animateElLeftRight(this.querySelector("#blur_el"), 0, -5);
+  });
+
+  imageEditor.blurModeBtn.addEventListener("mouseleave", function () {
+    animateElTopBottom(this.querySelector("#blur_el"), 3, 0);
+    animateElLeftRight(this.querySelector("#blur_el"), -5, 0);
+  });
+
+  // Apply paint
+  imageEditor.applyPaintingCanvasBtn.addEventListener(
+    "mouseenter",
+    function () {
+      animateElZoom(this.querySelector("svg"), 1, 0.8);
+    }
+  );
+
+  imageEditor.applyPaintingCanvasBtn.addEventListener(
+    "mouseleave",
+    function () {
+      animateElZoom(this.querySelector("svg"), 0.8, 1);
+    }
+  );
+
+  // Clear painting canvas
+  imageEditor.clearPaintingCanvasBtn.addEventListener(
+    "mouseenter",
+    function () {
+      animateElRotation(this.querySelector("svg"), 0, -30, 0.6);
+    }
+  );
+
+  imageEditor.clearPaintingCanvasBtn.addEventListener(
+    "mouseleave",
+    function () {
+      animateElRotation(this.querySelector("svg"), -30, 0, 0.6);
+    }
+  );
+
+  // Apply filters
+  imageEditor.applyFiltersBtn.addEventListener("mouseenter", function () {
+    animateElZoom(this.querySelector("svg"), 1, 0.8);
+  });
+
+  imageEditor.applyFiltersBtn.addEventListener("mouseleave", function () {
+    animateElZoom(this.querySelector("svg"), 0.8, 1);
+  });
+
+  // Reset filters btn
+  imageEditor.resetFiltersBtn.addEventListener("mouseenter", function () {
+    animateElRotation(this.querySelector("svg"), 0, -30, 0.6);
+  });
+
+  imageEditor.resetFiltersBtn.addEventListener("mouseleave", function () {
+    animateElRotation(this.querySelector("svg"), -30, 0, 0.6);
+  });
+
+  // Apply rotation
+  imageEditor.imageRotationSliderApply.addEventListener(
+    "mouseenter",
+    function () {
+      animateElZoom(this.querySelector("svg"), 1, 0.8);
+    }
+  );
+
+  imageEditor.imageRotationSliderApply.addEventListener(
+    "mouseleave",
+    function () {
+      animateElZoom(this.querySelector("svg"), 0.8, 1);
+    }
+  );
+
+  // Reset filters btn
+  imageEditor.imageRotationSliderReset.addEventListener(
+    "mouseenter",
+    function () {
+      animateElRotation(this.querySelector("svg"), 0, -30, 0.6);
+    }
+  );
+
+  imageEditor.imageRotationSliderReset.addEventListener(
+    "mouseleave",
+    function () {
+      animateElRotation(this.querySelector("svg"), -30, 0, 0.6);
+    }
+  );
 }
 
 function animateElTopBottom(el, startPos, endPos) {
