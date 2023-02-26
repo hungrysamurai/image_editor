@@ -5,7 +5,7 @@ import {
   animateElZoom,
   animateElRotation,
   animateElFade,
-} from "./animationFunctions.js";
+} from "./animations.js";
 
 // DOM elements
 const cpContainer = document.querySelector(".control-panel-container");
@@ -26,7 +26,7 @@ const uploadInput = document.querySelector("#upload-input");
 const initUploadLabel = document.querySelector("#initial-upload");
 
 // Drag'n'Drop input element
-const dropArea = document.querySelector(".drag-area");
+const dragArea = document.querySelector(".drag-area");
 
 // Init
 let currentEditor;
@@ -44,21 +44,21 @@ uploadInput.addEventListener("change", (e) => {
 
 // Drag'n'Drop upload
 ["dragenter", "dragover", "dragleave", "drop"].forEach((e) => {
-  dropArea.addEventListener(e, preventDefaults);
+  dragArea.addEventListener(e, preventDefaults);
 });
 
 // Highlight/unhighlight area
 ["dragenter", "dragover"].forEach((e) => {
-  dropArea.addEventListener(e, () => {
-    dropArea.classList.add("active");
+  dragArea.addEventListener(e, () => {
+    dragArea.classList.add("active");
   });
 });
 
-dropArea.addEventListener("dragleave", () => {
-  dropArea.classList.remove("active");
+dragArea.addEventListener("dragleave", () => {
+  dragArea.classList.remove("active");
 });
 
-dropArea.addEventListener("drop", (e) => {
+dragArea.addEventListener("drop", (e) => {
   let dt = e.dataTransfer;
   let file = dt.files[0];
 

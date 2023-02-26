@@ -1,6 +1,6 @@
-import Cropper from "./cropperjs/cropper.esm.js";
-import * as StackBlur from "./stackblur/stackblur-es.min.js";
-import icons from "./icons.js";
+import Cropper from "./assets/cropperjs/cropper.esm.js";
+import * as StackBlur from "./assets/stackblur/stackblur-es.min.js";
+import icons from "./assets/icons.js";
 
 export default class ImageEditor {
   constructor(DOMContainers, imageFile) {
