@@ -677,12 +677,12 @@ export default class ImageEditor {
 
   addRotationEvents() {
     this.imageRotationSlider.addEventListener("input", (e) => {
-      this.cropper.options.autoCropArea = 0.5;
-      this.cropper.setAspectRatio(0);
-
+      if (!this.cropper.cropped) {
+        this.cropper.options.autoCropArea = 0.5;
+        this.cropper.setAspectRatio(0);
+      }
       this.cropper.rotateTo(e.target.value);
       this.imageRotationValue.textContent = e.target.value;
-
       this.cropper.crop();
     });
 
