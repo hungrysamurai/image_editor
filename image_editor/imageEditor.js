@@ -490,7 +490,6 @@ export default class ImageEditor {
     this.brushIsPressed;
     this.brushIsEraser;
 
-    this.colorPicker.value = this.brushColor;
     this.brushSizeEl.textContent = this.brushSize;
 
     this.colorPicker.addEventListener(
@@ -939,6 +938,7 @@ export default class ImageEditor {
     this.brushColor = "#000000";
     this.brushSize = 10;
     this.brushSizeEl.textContent = this.brushSize;
+    this.colorPicker.value = this.brushColor;
     this.brushIsPressed = false;
     this.brushIsEraser = false;
 
