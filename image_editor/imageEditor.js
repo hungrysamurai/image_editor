@@ -498,20 +498,13 @@ export default class ImageEditor {
     );
 
     this.increaseBrushSize.addEventListener("click", () => {
-      this.brushSize += 5;
-      if (this.brushSize > 50) {
-        this.brushSize = 50;
-      }
-      this.brushSizeEl.textContent = this.brushSize;
+      this.changeBrushSize('increase')
     });
 
     this.decreaseBrushSize.addEventListener("click", () => {
-      this.brushSize -= 5;
-      if (this.brushSize < 5) {
-        this.brushSize = 5;
-      }
-      this.brushSizeEl.textContent = this.brushSize;
+      this.changeBrushSize('decrease')
     });
+
 
     this.brushModeBtn.addEventListener("click", () => {
       if (this.blurCanvas) {
@@ -552,6 +545,23 @@ export default class ImageEditor {
     this.applyPaintingCanvasBtn.addEventListener("click", () => {
       this.applyPaintingCanvas();
     });
+  }
+
+  changeBrushSize(action) {
+
+    if (action === 'increase') {
+      this.brushSize += 1;
+      if (this.brushSize > 50) {
+        this.brushSize = 50;
+      }
+    } else if (action === 'decrease') {
+      this.brushSize -= 1;
+      if (this.brushSize < 1) {
+        this.brushSize = 1;
+      }
+    }
+
+    this.brushSizeEl.textContent = this.brushSize;
   }
 
   // Create all filters stuff in DOM
@@ -653,7 +663,7 @@ export default class ImageEditor {
     <div class="rotation-slider-container">
       <label for="rotation-slider"><span id="rotation-value">0</span>°</label>
       <div class="slider-elements">
-      <input type="range" value="0" min="-180" max="180" id="rotation-slider" />
+      <input type="range" step="0.1" value="0" min="-180" max="180" id="rotation-slider" />
       ${icons.rotationRuler}
       </div>
       </div>

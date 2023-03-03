@@ -77,6 +77,9 @@ function uploadFile(file) {
   mainContainer.innerHTML = "";
   cpContainer.innerHTML = "";
 
+  // Remove old event listener for keyboard shortcuts 
+  document.removeEventListener('keypress', keyboardShortcuts);
+
   currentEditor = new ImageEditor(DOMContainers, file);
 
   initEvents();
@@ -153,6 +156,9 @@ function initEvents() {
       removeToolActiveStates(aspectRatioBtns);
     });
   });
+
+  // Keyboard brush events
+  document.addEventListener('keypress', keyboardShortcuts)
 
   // Eraser tool
   eraserBrush.addEventListener("click", () => {
@@ -674,4 +680,16 @@ function addCPAnimationsEvents() {
       animateElRotation(this.querySelector("svg"), -30, 0, 0.6);
     }
   );
+}
+
+function keyboardShortcuts(e) {
+  if (currentEditor.paintingCanvas) {
+    if (e.key === '[') {
+      currentEditor.changeBrushSize('decrease');
+    } else if (e.key === ']') {
+      currentEditor.changeBrushSize('increase');
+    }
+    currentEditor.brushCursor.style.width = `${currentEditor.brushSize * 2}px`;
+    currentEditor.brushCursor.style.height = `${currentEditor.brushSize * 2}px`;
+  }
 }
