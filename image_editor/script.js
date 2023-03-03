@@ -78,7 +78,7 @@ function uploadFile(file) {
   cpContainer.innerHTML = "";
 
   // Remove old event listener for keyboard shortcuts 
-  document.removeEventListener('keypress', keyboardShortcuts);
+  document.removeEventListener('keydown', keyboardShortcuts);
 
   currentEditor = new ImageEditor(DOMContainers, file);
 
@@ -158,7 +158,7 @@ function initEvents() {
   });
 
   // Keyboard brush events
-  document.addEventListener('keypress', keyboardShortcuts)
+  document.addEventListener('keydown', keyboardShortcuts)
 
   // Eraser tool
   eraserBrush.addEventListener("click", () => {
@@ -683,13 +683,17 @@ function addCPAnimationsEvents() {
 }
 
 function keyboardShortcuts(e) {
+
   if (currentEditor.paintingCanvas) {
-    if (e.key === '[') {
+    if (e.keyCode == 219) {
       currentEditor.changeBrushSize('decrease');
-    } else if (e.key === ']') {
+    } else if (e.keyCode == 221) {
       currentEditor.changeBrushSize('increase');
     }
-    currentEditor.brushCursor.style.width = `${currentEditor.brushSize * 2}px`;
-    currentEditor.brushCursor.style.height = `${currentEditor.brushSize * 2}px`;
+
+    if (currentEditor.brushCursor) {
+      currentEditor.brushCursor.style.width = `${currentEditor.brushSize * 2}px`;
+      currentEditor.brushCursor.style.height = `${currentEditor.brushSize * 2}px`;
+    }
   }
 }
