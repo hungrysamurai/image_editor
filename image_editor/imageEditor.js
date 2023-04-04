@@ -498,13 +498,12 @@ export default class ImageEditor {
     );
 
     this.increaseBrushSize.addEventListener("click", () => {
-      this.changeBrushSize('increase')
+      this.changeBrushSize("increase");
     });
 
     this.decreaseBrushSize.addEventListener("click", () => {
-      this.changeBrushSize('decrease')
+      this.changeBrushSize("decrease");
     });
-
 
     this.brushModeBtn.addEventListener("click", () => {
       if (this.blurCanvas) {
@@ -548,13 +547,12 @@ export default class ImageEditor {
   }
 
   changeBrushSize(action) {
-
-    if (action === 'increase') {
+    if (action === "increase") {
       this.brushSize += 1;
       if (this.brushSize > 50) {
         this.brushSize = 50;
       }
-    } else if (action === 'decrease') {
+    } else if (action === "decrease") {
       this.brushSize -= 1;
       if (this.brushSize < 1) {
         this.brushSize = 1;
