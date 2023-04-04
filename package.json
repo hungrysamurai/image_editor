@@ -1,0 +1,39 @@
+{
+  "name": "image_editor",
+  "version": "1.0.0",
+  "description": "Image Editor",
+  "browserslist": "> 0.5%, last 2 versions, not dead",
+  "scripts": {
+    "start": "parcel index.html --dist-dir ./build",
+    "build": "parcel build index.html --dist-dir ./dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hungrysamurai/image_editor.git"
+  },
+  "keywords": [
+    "image",
+    "editing",
+    "tool"
+  ],
+  "author": "hungrysamurai",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hungrysamurai/image_editor/issues"
+  },
+  "homepage": "https://github.com/hungrysamurai/image_editor#readme",
+  "targets": {
+    "default": {
+      "publicUrl": "./"
+    }
+  },
+  "devDependencies": {
+    "parcel": "^2.8.3"
+  },
+  "dependencies": {
+    "@parcel/transformer-sass": "^2.8.3",
+    "cropperjs": "^1.5.13",
+    "gsap": "^3.11.5",
+    "stackblur-canvas": "^2.5.0"
+  }
+}

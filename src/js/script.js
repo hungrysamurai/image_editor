@@ -1,3 +1,5 @@
+import { gsap } from "gsap";
+
 import ImageEditor from "./imageEditor.js";
 import {
   animateElTopBottom,
@@ -683,7 +685,6 @@ function addCPAnimationsEvents() {
 }
 
 function keyboardShortcuts(e) {
-
   if (currentEditor.paintingCanvas) {
     if (e.keyCode == 219) {
       currentEditor.changeBrushSize('decrease');

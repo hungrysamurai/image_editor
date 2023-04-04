@@ -1,0 +1,206 @@
+@import './mixins';
+@import './variables';
+
+.filters-controls {
+ @include flexContainer(center,space-between);
+  margin: 0 auto;
+  width: 1200px;
+  max-width: 100%;
+  height: 100%;
+
+  & .filters-left-col,
+    .filters-right-col{
+       @include flexContainer(center,center);
+       height: 100%;
+       flex: 5;
+       flex-direction: column;
+       padding: 0.5rem;
+
+       & .filter-range-slider {
+           @include flexContainer(center,space-around);
+           flex: 1;
+           width: 95%;
+
+           & label {
+              @include flexContainer(center,space-between);
+              margin-right: 1.5rem;
+              width: 5%;
+           }
+
+           & input[type="range"] {
+              -webkit-appearance: none;
+              background: transparent;
+              width: 90%;
+
+              &::-webkit-slider-thumb {
+                  -webkit-appearance: none;
+                }
+
+              &:focus {
+                 outline: none;
+              }
+
+              &::-ms-track {
+                  width: 90%;
+                  cursor: pointer;
+                  background: transparent;
+                  border-color: transparent;
+                  color: transparent;
+                }
+
+              &::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                height: 1.25rem;
+                width: 1.25rem;
+                border-radius: 50%;
+                background: $active-blue;
+                cursor: pointer;
+                margin-top: -0.5rem;
+                box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.88), 0px 4px 8px rgba(0, 0, 0, 0.66);
+              }
+
+              &::-moz-range-thumb {
+                 height: 1.25rem;
+                 width: 1.25rem;
+                 border-radius: 50%;
+                 background: $active-blue;
+                 border: none;
+                 cursor: pointer;
+                 box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.88), 0px 4px 8px rgba(0, 0, 0, 0.66);
+               }
+
+              &::-ms-thumb {
+                  height: 1.25rem;
+                  width: 1.25rem;
+                  border-radius: 50%;
+                  background: $active-blue;
+                  cursor: pointer;
+                  box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.88), 0px 4px 8px rgba(0, 0, 0, 0.66);
+                }
+
+              &::-webkit-slider-runnable-track {
+                   height: 0.35rem;
+                   cursor: pointer;
+                   background: #fff;
+                   border-radius: 0.25rem;
+                 }
+
+              &:focus::-webkit-slider-runnable-track {
+                    background: $light-gray;
+                  }
+
+              &::-moz-range-track {
+                     height: 0.35rem;
+                     cursor: pointer;
+                     background: #fff;
+                     border-radius: 0.25rem;
+                   }
+
+              &:focus::-moz-range-track {
+                   background: $light-gray;
+                 }
+
+              &::-ms-track {
+                    height: 0.35rem;
+                    cursor: pointer;
+                    background: #fff;
+                    border-radius: 0.25rem;
+                  }
+          }
+       }
+    }
+
+  & .filters-left-col {
+      margin-left: 4rem;
+    }
+
+  & .filters-apply-reset {
+      @include flexContainer(center,center);
+      flex: 1;
+      margin-right: 4rem;
+      background: transparent;
+      border: none;
+      padding: 0 0.5rem;
+      cursor: pointer;
+      flex-direction: column;
+
+      & button {
+         @include flexContainer(center,center);
+         background: transparent;
+         border: none;
+         padding: 0 0.25rem;
+         cursor: pointer;
+        }
+
+        & svg {
+         width: 90%;
+        }
+    }
+}
+
+
+@media (max-width: 768px){
+   .filters-controls {
+     width: 100%;
+     justify-content: center;
+
+     & .filters-left-col,
+       .filters-right-col{
+
+         & .filter-range-slider label {
+            width: 7%;
+         }
+       }
+
+   
+     & .filters-left-col {
+        margin-left: 1rem;
+      }
+
+     & .filters-apply-reset {
+        flex: 2;
+        margin-right: 1rem;
+        padding: 0 0.25rem;
+
+        & button {
+         padding: 0 0.1rem;
+        }
+
+        & svg {
+         width: 80%;
+        }
+      }
+   }
+}
+
+@media (max-width: 568px) {
+ .filters-controls {
+
+  & .filters-left-col,
+    .filters-right-col {
+      padding: 0.1rem;
+    }
+
+  & .filters-left-col {
+    margin-left: 0;
+  }
+
+  & .filters-apply-reset {
+     flex: 2;
+     margin-right: 0rem;
+     padding: 0 0.25rem;
+
+     & button {
+      padding: 0rem;
+     }
+
+     & svg {
+      width: 75%;
+     }
+
+     & label {
+      width: 12%;
+     }
+   }
+ }
+}

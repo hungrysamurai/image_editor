@@ -1,0 +1,67 @@
+@import './mixins';
+@import './variables';
+
+.main-container {
+ @include flexContainer(center, center);
+  position: absolute;
+  top: 54px;
+  width: 100%;
+  height: calc(100% - 216px);
+  background-color: $gray;
+  color: #fff;
+  overflow: hidden;
+
+  & .drag-area {
+     @include flexContainer(center, center);
+     width: 100%;
+     height: 100%;
+     background: url("../assets/images/placeholder_image.svg");
+     background-repeat: no-repeat;
+     background-position: center;
+    background-size: 40%;
+
+     &.active{
+       background: url("../assets/images/placeholder_image_active.svg");
+       background-size: 40%;
+       background-repeat: no-repeat;
+       background-position: center;
+     }
+
+     & .placeholder-text {
+        text-align: center;
+        font-size: 36px;
+      }
+    }
+    
+  & .image-container {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      aspect-ratio: 1 / 1;
+      position: relative;
+
+      & .image-element {
+         display: block;
+         max-height: 100%;
+         margin: 0 auto;
+      }
+   }
+
+   & canvas {
+     cursor: none;
+   }
+}
+
+@media (max-width: 768px){
+ .main-container{
+
+  & .drag-area {
+     width: 100%;
+     height: 100%;
+
+     & .placeholder-text {
+         display: none;
+       }
+    }
+  }
+}

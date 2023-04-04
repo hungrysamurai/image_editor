@@ -1,6 +1,7 @@
-import Cropper from "./assets/cropperjs/cropper.esm.js";
-import * as StackBlur from "./assets/stackblur/stackblur-es.min.js";
-import icons from "./assets/icons.js";
+import Cropper from 'cropperjs';
+import { canvasRGBA } from 'stackblur-canvas'
+
+import icons from "../assets/icons.js";
 
 export default class ImageEditor {
   constructor(DOMContainers, imageFile) {
@@ -12,7 +13,6 @@ export default class ImageEditor {
 
     this.croppedBox;
     this.previewImage;
-
     this.paintingCanvas;
     this.blurCanvas;
     this.offScreenCanvas;
@@ -825,7 +825,7 @@ export default class ImageEditor {
       let ctx = nextCanvas.getContext("2d");
       ctx.filter = this.applyFilters();
 
-      StackBlur.canvasRGBA(
+      canvasRGBA(
         nextCanvas,
         0,
         0,
@@ -896,7 +896,7 @@ export default class ImageEditor {
 
     ctx.filter = this.applyFilters();
 
-    StackBlur.canvasRGBA(
+    canvasRGBA(
       canvas,
       0,
       0,

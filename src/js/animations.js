@@ -1,3 +1,5 @@
+import { gsap } from "gsap";
+
 const animateElTopBottom = (el, startPos, endPos) => {
   gsap.fromTo(
     el,
