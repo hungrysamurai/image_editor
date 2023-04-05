@@ -4,6 +4,27 @@ import { canvasRGBA } from 'stackblur-canvas'
 import icons from "../assets/icons.js";
 
 export class ImageEditor {
+  #imageFormats = [
+    ["image/jpeg", 0.3, icons.formatJPEG30],
+    ["image/jpeg", 0.5, icons.formatJPEG50],
+    ["image/jpeg", 0.8, icons.formatJPEG80],
+    ["image/jpeg", 1.0, icons.formatJPEG100],
+    ["image/png", 1, icons.formatPNG],
+    ["image/webp", 1, icons.formatWEBP],
+  ];
+
+  #filtersState = {
+    brightness: 100,
+    contrast: 100,
+    saturation: 100,
+    inversion: 0,
+    blur: 0,
+    hue: 0,
+  };
+
+  #cropperHistory = [];
+  #croppersCounter = 0
+
   constructor(DOMContainers, imageFile) {
     const [cpContainer, mainContainer, toolContainer] = DOMContainers;
 
@@ -21,29 +42,9 @@ export class ImageEditor {
     // Set name of file
     this.imageName = imageFile.name.substring(0, imageFile.name.length - 4);
 
-    this.imageFormats = [
-      ["image/jpeg", 0.3, icons.formatJPEG30],
-      ["image/jpeg", 0.5, icons.formatJPEG50],
-      ["image/jpeg", 0.8, icons.formatJPEG80],
-      ["image/jpeg", 1.0, icons.formatJPEG100],
-      ["image/png", 1, icons.formatPNG],
-      ["image/webp", 1, icons.formatWEBP],
-    ];
-
     this.currentImageFormatIndex = 3;
 
-    this.filtersState = {
-      brightness: 100,
-      contrast: 100,
-      saturation: 100,
-      inversion: 0,
-      blur: 0,
-      hue: 0,
-    };
-
     this.initialCanvas;
-    this.cropperHistory = [];
-    this.croppersCounter = 0;
 
     this.createLoader();
     this.loading("show");
@@ -86,8 +87,8 @@ export class ImageEditor {
           });
 
           // Add cropper events if it is first initialiization
-          this.croppersCounter++;
-          if (this.croppersCounter === 1) {
+          this.#croppersCounter++;
+          if (this.#croppersCounter === 1) {
             this.addCropperEvents();
           }
 
@@ -100,7 +101,7 @@ export class ImageEditor {
               maxHeight: 8192,
             });
 
-            this.cropperHistory.push(this.initialCanvas);
+            this.#cropperHistory.push(this.initialCanvas);
             this.setUndoBtn();
           }
 
@@ -631,7 +632,7 @@ export class ImageEditor {
   addFiltersEvents() {
     this.filtersSliders.forEach((filterRange) => {
       filterRange.addEventListener("input", (e) => {
-        this.filtersState[e.target.id] = e.target.value;
+        this.#filtersState[e.target.id] = e.target.value;
 
         this.applyFilters(this.previewImage);
         this.applyFilters(this.croppedBox);
@@ -720,14 +721,14 @@ export class ImageEditor {
   }
 
   applyFilters(element) {
-    let filtersString = `brightness(${this.filtersState.brightness}%)contrast(${this.filtersState.contrast}%)saturate(${this.filtersState.saturation}%)invert(${this.filtersState.inversion}%) blur(${this.filtersState.blur}px)hue-rotate(${this.filtersState.hue}deg)`;
+    let filtersString = `brightness(${this.#filtersState.brightness}%)contrast(${this.#filtersState.contrast}%)saturate(${this.#filtersState.saturation}%)invert(${this.#filtersState.inversion}%) blur(${this.#filtersState.blur}px)hue-rotate(${this.#filtersState.hue}deg)`;
 
     if (element) {
       element.style.filter = filtersString;
     }
     // return filtersString;
 
-    return `brightness(${this.filtersState.brightness}%)contrast(${this.filtersState.contrast}%)saturate(${this.filtersState.saturation}%)invert(${this.filtersState.inversion}%) hue-rotate(${this.filtersState.hue}deg)`;
+    return `brightness(${this.#filtersState.brightness}%)contrast(${this.#filtersState.contrast}%)saturate(${this.#filtersState.saturation}%)invert(${this.#filtersState.inversion}%) hue-rotate(${this.#filtersState.hue}deg)`;
   }
 
   resetFilters() {
@@ -738,10 +739,10 @@ export class ImageEditor {
         filterRange.id === "contrast"
       ) {
         filterRange.value = 100;
-        this.filtersState[filterRange.id] = 100;
+        this.#filtersState[filterRange.id] = 100;
       } else {
         filterRange.value = 0;
-        this.filtersState[filterRange.id] = 0;
+        this.#filtersState[filterRange.id] = 0;
       }
     });
     this.applyFilters(this.previewImage);
@@ -749,7 +750,7 @@ export class ImageEditor {
   }
 
   setUndoBtn(paintMode) {
-    if (this.cropperHistory.length === 1 || paintMode) {
+    if (this.#cropperHistory.length === 1 || paintMode) {
       this.cropperUndoBtn.disabled = true;
       this.cropperUndoBtn.style.opacity = 0.5;
     } else {
@@ -759,13 +760,13 @@ export class ImageEditor {
   }
 
   saveCanvas(canvas) {
-    this.cropperHistory.push(canvas);
+    this.#cropperHistory.push(canvas);
     this.setUndoBtn();
   }
 
   loadCanvas() {
-    this.cropperHistory.pop();
-    let previous = this.cropperHistory[this.cropperHistory.length - 1];
+    this.#cropperHistory.pop();
+    let previous = this.#cropperHistory[this.#cropperHistory.length - 1];
     this.setUndoBtn();
 
     return previous;
@@ -784,8 +785,8 @@ export class ImageEditor {
 
         this.cropper.replace(newImage.src);
       },
-      this.imageFormats[this.currentImageFormatIndex][0],
-      this.imageFormats[this.currentImageFormatIndex][1]
+      this.#imageFormats[this.currentImageFormatIndex][0],
+      this.#imageFormats[this.currentImageFormatIndex][1]
     );
   }
 
@@ -831,7 +832,7 @@ export class ImageEditor {
         0,
         nextCanvas.width,
         nextCanvas.height,
-        this.filtersState.blur * 3
+        this.#filtersState.blur * 3
       );
       ctx.drawImage(nextCanvas, 0, 0);
 
@@ -845,12 +846,12 @@ export class ImageEditor {
 
   undoChange() {
     this.loading("show");
-    if (this.cropperHistory.length === 1) {
+    if (this.#cropperHistory.length === 1) {
       this.canvasReplace(this.initialCanvas);
       this.setUndoBtn();
       this.resetFilters();
-    } else if (this.cropperHistory.length === 2) {
-      this.cropperHistory.pop();
+    } else if (this.#cropperHistory.length === 2) {
+      this.#cropperHistory.pop();
       this.canvasReplace(this.initialCanvas);
       this.setUndoBtn();
       this.resetFilters();
@@ -864,7 +865,7 @@ export class ImageEditor {
   setImageFormat(type) {
     let index;
 
-    this.imageFormats.forEach((format, i) => {
+    this.#imageFormats.forEach((format, i) => {
       if (format[0] === type) {
         index = i;
       }
@@ -877,17 +878,17 @@ export class ImageEditor {
     }
 
     this.imageFormatBtn.innerHTML =
-      this.imageFormats[this.currentImageFormatIndex][2];
+      this.#imageFormats[this.currentImageFormatIndex][2];
   }
 
   updateImageFormat() {
     this.currentImageFormatIndex++;
-    if (this.currentImageFormatIndex > this.imageFormats.length - 1) {
+    if (this.currentImageFormatIndex > this.#imageFormats.length - 1) {
       this.currentImageFormatIndex = 0;
     }
 
     this.imageFormatBtn.innerHTML =
-      this.imageFormats[this.currentImageFormatIndex][2];
+      this.#imageFormats[this.currentImageFormatIndex][2];
   }
 
   downloadImage() {
@@ -902,14 +903,14 @@ export class ImageEditor {
       0,
       canvas.width,
       canvas.height,
-      this.filtersState.blur * 3
+      this.#filtersState.blur * 3
     );
 
     ctx.drawImage(canvas, 0, 0);
 
     let result = canvas.toDataURL(
-      this.imageFormats[this.currentImageFormatIndex][0],
-      this.imageFormats[this.currentImageFormatIndex][1]
+      this.#imageFormats[this.currentImageFormatIndex][0],
+      this.#imageFormats[this.currentImageFormatIndex][1]
     );
 
     const createEl = document.createElement("a");
@@ -1311,7 +1312,9 @@ export class ImageEditor {
   applyPaintingCanvas() {
     this.loading("show");
     this.applyBlurCanvas();
+
     this.cropper.enable();
+    this.cropper.crop();
 
     // Get base canvas
     let baseCanvas = this.cropper.clear().getCroppedCanvas();
