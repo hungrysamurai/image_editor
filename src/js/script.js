@@ -1,6 +1,6 @@
 import { gsap } from "gsap";
 
-import ImageEditor from "./imageEditor.js";
+import { ImageEditor } from "./imageEditor.js";
 import {
   animateElTopBottom,
   animateElLeftRight,

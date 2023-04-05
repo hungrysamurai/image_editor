@@ -3,7 +3,7 @@ import { canvasRGBA } from 'stackblur-canvas'
 
 import icons from "../assets/icons.js";
 
-export default class ImageEditor {
+export class ImageEditor {
   constructor(DOMContainers, imageFile) {
     const [cpContainer, mainContainer, toolContainer] = DOMContainers;
 
@@ -96,8 +96,8 @@ export default class ImageEditor {
             this.initialCanvas = this.cropper.getCroppedCanvas({
               minWidth: 256,
               minHeight: 256,
-              maxWidth: 4096,
-              maxHeight: 4096,
+              maxWidth: 8192,
+              maxHeight: 8192,
             });
 
             this.cropperHistory.push(this.initialCanvas);
@@ -816,8 +816,8 @@ export default class ImageEditor {
     let nextCanvas = this.cropper.getCroppedCanvas({
       minWidth: 256,
       minHeight: 256,
-      maxWidth: 4096,
-      maxHeight: 4096,
+      maxWidth: 8192,
+      maxHeight: 8192,
     });
 
     if (filters) {
