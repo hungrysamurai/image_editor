@@ -13,14 +13,14 @@
   display: flex;
   overflow: hidden;
 
-   & .inner-container {
+   .inner-container {
       @include flexContainer(center, space-between);
       margin: 0 auto;
       width: 1200px;
       height: 100%;
      }
 
-   & button, label{
+   button, label{
       @include flexContainer(center, center);
       background: transparent;
       border: none;
@@ -28,34 +28,34 @@
       cursor: pointer;
     }
 
-    & svg {
+    svg {
      width: 90%;
     }
 
-    & .active {
-      & svg {
+    .active {
+      svg {
             filter: drop-shadow(0px 0px 7px $active-blue);
-           & path {
+           path {
              fill: $active-blue;
               stroke: none;
            }
         }
     }
     
-    & .cp-toolbox {
+    .cp-toolbox {
       @include flexSetJC(4,flex-start);
       margin-left: 4rem;
     }
 
-    & .cp-zoom-buttons {
+    .cp-zoom-buttons {
        @include flexSetJC(2,center);
     }
 
-    & .cp-undo-container {
+    .cp-undo-container {
        @include flexSetJC(1,center);
     }
 
-    & .upload-download-buttons {
+    .upload-download-buttons {
        @include flexSetJC(3,flex-end);
        margin-right: 4rem;
     }
@@ -64,19 +64,19 @@
 @media (max-width: 768px){
   .control-panel-container{
 
-    & button, label{
+    button, label{
       padding: 0 0.25rem;
     }
 
-    & svg{
+    svg{
       width: 75%;
     }
 
-    & .cp-toolbox {
+    .cp-toolbox {
       margin-left: 1rem;
     }
 
-    & .upload-download-buttons {
+    .upload-download-buttons {
       margin-right: 1rem;
     }
   }
@@ -85,19 +85,19 @@
 @media (max-width: 568px){
   .control-panel-container{
 
-    & button, label{
+    button, label{
       padding: 0 0.1rem;
     }
 
-    & svg{
+    svg{
       width: 70%;
     }
 
-    & .cp-toolbox{
+    .cp-toolbox{
       margin-left: 0.5rem;
     }
 
-    & .upload-download-buttons{
+    .upload-download-buttons{
        margin-right: 0.5rem;
     }
   }

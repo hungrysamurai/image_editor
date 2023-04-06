@@ -8,7 +8,7 @@
   max-width: 100%;
   height: 100%;
 
-  & .filters-left-col,
+  .filters-left-col,
     .filters-right-col{
        @include flexContainer(center,center);
        height: 100%;
@@ -16,18 +16,18 @@
        flex-direction: column;
        padding: 0.5rem;
 
-       & .filter-range-slider {
+       .filter-range-slider {
            @include flexContainer(center,space-around);
            flex: 1;
            width: 95%;
 
-           & label {
+           label {
               @include flexContainer(center,space-between);
               margin-right: 1.5rem;
               width: 5%;
            }
 
-           & input[type="range"] {
+           input[type="range"] {
               -webkit-appearance: none;
               background: transparent;
               width: 90%;
@@ -110,11 +110,11 @@
        }
     }
 
-  & .filters-left-col {
+  .filters-left-col {
       margin-left: 4rem;
     }
 
-  & .filters-apply-reset {
+  .filters-apply-reset {
       @include flexContainer(center,center);
       flex: 1;
       margin-right: 4rem;
@@ -124,7 +124,7 @@
       cursor: pointer;
       flex-direction: column;
 
-      & button {
+      button {
          @include flexContainer(center,center);
          background: transparent;
          border: none;
@@ -132,7 +132,7 @@
          cursor: pointer;
         }
 
-        & svg {
+        svg {
          width: 90%;
         }
     }
@@ -144,29 +144,29 @@
      width: 100%;
      justify-content: center;
 
-     & .filters-left-col,
+     .filters-left-col,
        .filters-right-col{
 
-         & .filter-range-slider label {
+         .filter-range-slider label {
             width: 7%;
          }
        }
 
    
-     & .filters-left-col {
+     .filters-left-col {
         margin-left: 1rem;
       }
 
-     & .filters-apply-reset {
+     .filters-apply-reset {
         flex: 2;
         margin-right: 1rem;
         padding: 0 0.25rem;
 
-        & button {
+        button {
          padding: 0 0.1rem;
         }
 
-        & svg {
+        svg {
          width: 80%;
         }
       }
@@ -176,29 +176,29 @@
 @media (max-width: 568px) {
  .filters-controls {
 
-  & .filters-left-col,
+  .filters-left-col,
     .filters-right-col {
       padding: 0.1rem;
     }
 
-  & .filters-left-col {
+  .filters-left-col {
     margin-left: 0;
   }
 
-  & .filters-apply-reset {
+  .filters-apply-reset {
      flex: 2;
      margin-right: 0rem;
      padding: 0 0.25rem;
 
-     & button {
+     button {
       padding: 0rem;
      }
 
-     & svg {
+     svg {
       width: 75%;
      }
 
-     & label {
+     label {
       width: 12%;
      }
    }

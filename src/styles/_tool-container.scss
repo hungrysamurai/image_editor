@@ -16,14 +16,14 @@
   z-index: 5;
   overflow: hidden;
 
-  & .placeholder-button{
+  .placeholder-button{
       width: 75px;
 
-      & svg {
+      svg {
         cursor: pointer;
       }
 
-      & label {
+      label {
           @include flexContainer(center, center);
           width: 100%;
     }
