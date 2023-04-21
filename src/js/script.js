@@ -1,21 +1,35 @@
 import { gsap } from "gsap";
 
-import { ImageEditor } from "./imageEditor.js";
+import ImageEditor from "./imageEditor";
 import {
   animateElTopBottom,
   animateElLeftRight,
   animateElZoom,
   animateElRotation,
   animateElFade,
-} from "./animations.js";
+} from "./animations";
+
+/**
+ * If mobile - true, else - false
+ * @type {boolean}
+ */
+const isMobile = window.matchMedia("(pointer:coarse)").matches;
 
 // DOM elements
 const cpContainer = document.querySelector(".control-panel-container");
 const mainContainer = document.querySelector(".main-container");
 const toolContainer = document.querySelector(".tool-container");
 
+/**
+ * Array of DOM elements that will hold ImageEditor components
+ * @type {Array}
+ */
 const DOMContainers = [cpContainer, mainContainer, toolContainer];
 
+/**
+ * Array of DOM elements that will hold ImageEditors tools panels
+ * @type {Array}
+ */
 const toolContainers = [
   toolContainer.querySelector(".crop-controls"),
   toolContainer.querySelector(".paint-controls"),
@@ -31,7 +45,16 @@ const initUploadLabel = document.querySelector("#initial-upload");
 const dragArea = document.querySelector(".drag-area");
 
 // Init
+/**
+ * Current ImageEditor object
+ * @type {Object}
+ */
 let currentEditor;
+
+/**
+ * Current mode
+ * @type {string}
+ */
 let currentMode;
 
 // Event listeners
@@ -70,6 +93,12 @@ dragArea.addEventListener("drop", (e) => {
 });
 
 // Functions
+
+/**
+ * @property {Function} uploadFile - upload file, init new ImageEditor, initially activate crop-mode, add events on ImageEditor DOM elements
+ * @param {Object} file - file object from input 
+ * @returns {void}
+ */
 function uploadFile(file) {
   // Initially delete upload button
   if (document.querySelector(".placeholder-button")) {
@@ -82,12 +111,16 @@ function uploadFile(file) {
   // Remove old event listener for keyboard shortcuts 
   document.removeEventListener('keydown', keyboardShortcuts);
 
-  currentEditor = new ImageEditor(DOMContainers, file);
+  currentEditor = new ImageEditor(DOMContainers, file, isMobile);
 
   initEvents();
   activateMode("crop", true);
 }
 
+/**
+  * @property {Function} initEvents - Adds events on DOM elements of ImageEditor
+  * @returns {void}
+  */
 function initEvents() {
   // Tools
   const aspectRatioBtns = currentEditor.cropperControlsContainer
@@ -180,10 +213,19 @@ function initEvents() {
     setPaintBrush();
   });
 
-  addCPAnimationsEvents();
+  addMicroAnimations();
 }
 
+
+/**
+ * 
+ * @property {Function} activateMode - Activate mode. Initially - crop mode. 
+ * @param {string} mode - new mode of ImageEditor
+ * @param {boolean} newFile - if it is first initialization
+ * @returns {void}
+ */
 function activateMode(mode, newFile) {
+
   if (newFile) {
     currentEditor.cropModeBtn.classList.add("active");
   }
@@ -201,7 +243,11 @@ function activateMode(mode, newFile) {
     currentEditor.paintingCanvas = undefined;
     currentEditor.setZoombuttonsState("both-active");
     currentEditor.setUndoBtn(false);
-    currentEditor.initBrushCursor(undefined, false);
+
+    if (!isMobile) {
+      currentEditor.initBrushCursor(undefined, false);
+    }
+
   }
 
   if (currentMode === "filters") {
@@ -212,6 +258,7 @@ function activateMode(mode, newFile) {
     currentEditor.resetRotation();
   }
 
+  // Set current mode to new
   currentMode = mode;
 
   // Activate proper panel in DOM
@@ -241,65 +288,101 @@ function activateMode(mode, newFile) {
   }
 }
 
+/**
+ * 
+ * @property {Function} activateMode - Prevents default for some events
+ * @param {DragEvent} e - event object that cames from drag and drop events
+ * @returns {void}
+ */
 function preventDefaults(e) {
   e.preventDefault();
   e.stopPropagation();
 }
 
+/**
+ * 
+ * @property {Function} removeToolActiveStates - remove class 'active' from all provided elements
+ * @param {HTMLCollection} elements
+ * @returns {void}
+ */
 function removeToolActiveStates(elements) {
   elements.forEach((btn) => btn.classList.remove("active"));
 }
 
+/**
+ * 
+ * @property {Function} setPaintBrush - Highlight DOM elements of paint mode
+ * @returns {void}
+ */
 function setPaintBrush() {
   currentEditor.brushModeBtn.classList.add("active");
   currentEditor.eraserModeBtn.classList.remove("active");
   currentEditor.blurModeBtn.classList.remove("active");
 }
 
-// Animation events
+/**
+ * 
+ * @property {Function} addBasicMicroAnimation - Adds basic (with 2 states and one callback invocation) microanimation to element.
+ * @param {HTMLElement} element - element that will recieve 2 event listeners 
+ * @param {Function} callback - callback that will be added to invoke whet events from listeners fires 
+ * @param {string} innerElementSelector - inner element (element to animate) selector
+ * @param {number} val1 - initial value for gsap 
+ * @param {number} val2 - value animate to for gsap 
+ * @param {string} setOrigin - optional string that set element styles before animation 
+ * @returns {void}
+ */
+function addBasicMicroAnimation(element, callback, innerElementSelector, val1, val2, setOrigin) {
+  element.addEventListener('mouseenter', function () {
+    const innerElement = element.querySelector(innerElementSelector);
+    if (setOrigin) {
+      gsap.set(innerElement, {
+        transformOrigin: setOrigin,
+      });
+    }
+    callback(innerElement, val1, val2);
+  });
 
-// Placeholder btn
-initUploadLabel.addEventListener("mouseenter", function () {
-  animateElTopBottom(this.querySelector("#arrow"), 0, -10);
-});
-
-initUploadLabel.addEventListener("mouseleave", function () {
-  animateElTopBottom(this.querySelector("#arrow"), -10, 0);
-});
-
-initUploadLabel.addEventListener("click", function () {
-  animateElTopBottom(this.querySelector("#arrow"), -10, -125);
-});
+  element.addEventListener('mouseleave', function () {
+    const innerElement = element.querySelector(innerElementSelector);
+    callback(innerElement, val2, val1);
+  })
+}
 
 // Animation funcions
 
-function addCPAnimationsEvents() {
-  // Formats Btn
-  currentEditor.imageFormatBtn.addEventListener("mouseenter", function () {
-    animateElZoom(this.querySelector("svg"), 1, 1.3);
-  });
+/**
+ * 
+ * @property {Function} addMicroAnimations - add all micro animations to ImageEditor buttons/labels and elements
+ * @returns {void}
+ */
+function addMicroAnimations() {
 
-  currentEditor.imageFormatBtn.addEventListener("mouseleave", function () {
-    animateElZoom(this.querySelector("svg"), 1.3, 1);
-  });
+  // Formats Btn
+  addBasicMicroAnimation(
+    currentEditor.imageFormatBtn,
+    animateElZoom,
+    'svg',
+    1,
+    1.3,
+  );
 
   // Download Btn
-  currentEditor.cropperDownloadBtn.addEventListener("mouseenter", function () {
-    animateElTopBottom(this.querySelector("#arrow"), 0, 2);
-  });
-
-  currentEditor.cropperDownloadBtn.addEventListener("mouseleave", function () {
-    animateElTopBottom(this.querySelector("#arrow"), 2, 0);
-  });
+  addBasicMicroAnimation(
+    currentEditor.cropperDownloadBtn,
+    animateElTopBottom,
+    "#arrow",
+    0,
+    2,
+  );
 
   // Upload Btn
-  currentEditor.uploadNewImgBtn.addEventListener("mouseenter", function () {
-    animateElTopBottom(this.querySelector("#arrow"), 0, -5);
-  });
-
-  currentEditor.uploadNewImgBtn.addEventListener("mouseleave", function () {
-    animateElTopBottom(this.querySelector("#arrow"), -5, 0);
-  });
+  addBasicMicroAnimation(
+    currentEditor.uploadNewImgBtn,
+    animateElTopBottom,
+    "#arrow",
+    0,
+    -5,
+  );
 
   // Undo Btn
   currentEditor.cropperUndoBtn.addEventListener("mouseenter", function () {
@@ -315,22 +398,22 @@ function addCPAnimationsEvents() {
   });
 
   // Zoom out Btn
-  currentEditor.cropperZoomOutBtn.addEventListener("mouseenter", function () {
-    animateElZoom(this.querySelector("svg"), 1, 0.8);
-  });
-
-  currentEditor.cropperZoomOutBtn.addEventListener("mouseleave", function () {
-    animateElZoom(this.querySelector("svg"), 0.8, 1);
-  });
+  addBasicMicroAnimation(
+    currentEditor.cropperZoomOutBtn,
+    animateElZoom,
+    "svg",
+    1,
+    0.8,
+  );
 
   // Zoom in Btn
-  currentEditor.cropperZoomInBtn.addEventListener("mouseenter", function () {
-    animateElZoom(this.querySelector("svg"), 1, 1.2);
-  });
-
-  currentEditor.cropperZoomInBtn.addEventListener("mouseleave", function () {
-    animateElZoom(this.querySelector("svg"), 1.2, 1);
-  });
+  addBasicMicroAnimation(
+    currentEditor.cropperZoomInBtn,
+    animateElZoom,
+    "svg",
+    1,
+    1.2,
+  );
 
   // Rotation Mode btn
   currentEditor.rotationModeBtn.addEventListener("mouseenter", function () {
@@ -392,71 +475,54 @@ function addCPAnimationsEvents() {
   // Crop aspect ratio btns
 
   // Square
-  currentEditor.cropperBtnAspectSquare.addEventListener(
-    "mouseenter",
-    function () {
-      gsap.set(this.querySelector("#grid"), {
-        transformOrigin: "center center",
-      });
-
-      animateElZoom(this.querySelector("#grid"), 1, 1.2);
-    }
-  );
-
-  currentEditor.cropperBtnAspectSquare.addEventListener(
-    "mouseleave",
-    function () {
-      animateElZoom(this.querySelector("#grid"), 1.2, 1);
-    }
+  addBasicMicroAnimation(
+    currentEditor.cropperBtnAspectSquare,
+    animateElZoom,
+    "#grid",
+    1,
+    1.2,
+    'center center'
   );
 
   // 3:4
-  currentEditor.cropperBtnAspect34.addEventListener("mouseenter", function () {
-    gsap.set(this.querySelector("#grid"), {
-      transformOrigin: "center center",
-    });
-    animateElZoom(this.querySelector("#grid"), 1, 1.2);
-  });
-
-  currentEditor.cropperBtnAspect34.addEventListener("mouseleave", function () {
-    animateElZoom(this.querySelector("#grid"), 1.2, 1);
-  });
+  addBasicMicroAnimation(
+    currentEditor.cropperBtnAspect34,
+    animateElZoom,
+    "#grid",
+    1,
+    1.2,
+    'center center'
+  );
 
   // 4:3
-  currentEditor.cropperBtnAspect43.addEventListener("mouseenter", function () {
-    gsap.set(this.querySelector("#grid"), {
-      transformOrigin: "center center",
-    });
-    animateElZoom(this.querySelector("#grid"), 1, 1.2);
-  });
-
-  currentEditor.cropperBtnAspect43.addEventListener("mouseleave", function () {
-    animateElZoom(this.querySelector("#grid"), 1.2, 1);
-  });
+  addBasicMicroAnimation(
+    currentEditor.cropperBtnAspect43,
+    animateElZoom,
+    "#grid",
+    1,
+    1.2,
+    'center center'
+  );
 
   // 16:9
-  currentEditor.cropperBtnAspect169.addEventListener("mouseenter", function () {
-    gsap.set(this.querySelector("#grid"), {
-      transformOrigin: "center center",
-    });
-    animateElZoom(this.querySelector("#grid"), 1, 1.2);
-  });
-
-  currentEditor.cropperBtnAspect169.addEventListener("mouseleave", function () {
-    animateElZoom(this.querySelector("#grid"), 1.2, 1);
-  });
+  addBasicMicroAnimation(
+    currentEditor.cropperBtnAspect169,
+    animateElZoom,
+    "#grid",
+    1,
+    1.2,
+    'center center'
+  );
 
   // 9:16
-  currentEditor.cropperBtnAspect916.addEventListener("mouseenter", function () {
-    gsap.set(this.querySelector("#grid"), {
-      transformOrigin: "center center",
-    });
-    animateElZoom(this.querySelector("#grid"), 1, 1.2);
-  });
-
-  currentEditor.cropperBtnAspect916.addEventListener("mouseleave", function () {
-    animateElZoom(this.querySelector("#grid"), 1.2, 1);
-  });
+  addBasicMicroAnimation(
+    currentEditor.cropperBtnAspect916,
+    animateElZoom,
+    "#grid",
+    1,
+    1.2,
+    'center center'
+  );
 
   // Free
   currentEditor.cropperBtnAspectFree.addEventListener(
@@ -555,27 +621,25 @@ function addCPAnimationsEvents() {
   });
 
   // Apply crop btn
-  currentEditor.cropperBtnApply.addEventListener("mouseenter", function () {
-    animateElZoom(this.querySelector("svg"), 1, 0.8);
-  });
-
-  currentEditor.cropperBtnApply.addEventListener("mouseleave", function () {
-    animateElZoom(this.querySelector("svg"), 0.8, 1);
-  });
+  addBasicMicroAnimation(
+    currentEditor.cropperBtnApply,
+    animateElZoom,
+    "svg",
+    1,
+    0.8
+  );
 
   // Painting tools
 
   // Brush
-  currentEditor.brushModeBtn.addEventListener("mouseenter", function () {
-    gsap.set(this.querySelector("#pencil_el"), {
-      transformOrigin: "top right",
-    });
-    animateElRotation(this.querySelector("#pencil_el"), 0, -6);
-  });
-
-  currentEditor.brushModeBtn.addEventListener("mouseleave", function () {
-    animateElRotation(this.querySelector("#pencil_el"), -6, 0);
-  });
+  addBasicMicroAnimation(
+    currentEditor.brushModeBtn,
+    animateElRotation,
+    "#pencil_el",
+    0,
+    -6,
+    "top right"
+  );
 
   // Eraser
   currentEditor.eraserModeBtn.addEventListener("mouseenter", function () {
@@ -606,18 +670,12 @@ function addCPAnimationsEvents() {
   });
 
   // Apply paint
-  currentEditor.applyPaintingCanvasBtn.addEventListener(
-    "mouseenter",
-    function () {
-      animateElZoom(this.querySelector("svg"), 1, 0.8);
-    }
-  );
-
-  currentEditor.applyPaintingCanvasBtn.addEventListener(
-    "mouseleave",
-    function () {
-      animateElZoom(this.querySelector("svg"), 0.8, 1);
-    }
+  addBasicMicroAnimation(
+    currentEditor.applyPaintingCanvasBtn,
+    animateElZoom,
+    "svg",
+    1,
+    0.8,
   );
 
   // Clear painting canvas
@@ -636,13 +694,13 @@ function addCPAnimationsEvents() {
   );
 
   // Apply filters
-  currentEditor.applyFiltersBtn.addEventListener("mouseenter", function () {
-    animateElZoom(this.querySelector("svg"), 1, 0.8);
-  });
-
-  currentEditor.applyFiltersBtn.addEventListener("mouseleave", function () {
-    animateElZoom(this.querySelector("svg"), 0.8, 1);
-  });
+  addBasicMicroAnimation(
+    currentEditor.applyFiltersBtn,
+    animateElZoom,
+    "svg",
+    1,
+    0.8,
+  );
 
   // Reset filters btn
   currentEditor.resetFiltersBtn.addEventListener("mouseenter", function () {
@@ -654,18 +712,12 @@ function addCPAnimationsEvents() {
   });
 
   // Apply rotation
-  currentEditor.imageRotationSliderApply.addEventListener(
-    "mouseenter",
-    function () {
-      animateElZoom(this.querySelector("svg"), 1, 0.8);
-    }
-  );
-
-  currentEditor.imageRotationSliderApply.addEventListener(
-    "mouseleave",
-    function () {
-      animateElZoom(this.querySelector("svg"), 0.8, 1);
-    }
+  addBasicMicroAnimation(
+    currentEditor.imageRotationSliderApply,
+    animateElZoom,
+    "svg",
+    1,
+    0.8,
   );
 
   // Reset filters btn
@@ -684,7 +736,13 @@ function addCPAnimationsEvents() {
   );
 }
 
+/**
+ * @property {Function} keyboardShortcuts - increase/decrease paint brush size by pressing '[' ']' buttons on keyboard
+ * @param {KeyboardEvent} e - event object, that comes from listener that fires on keyboard input
+ * @returns {void}
+ */
 function keyboardShortcuts(e) {
+  console.log(e);
   if (currentEditor.paintingCanvas) {
     if (e.keyCode == 219) {
       currentEditor.changeBrushSize('decrease');
@@ -698,3 +756,16 @@ function keyboardShortcuts(e) {
     }
   }
 }
+
+// Placeholder btn
+addBasicMicroAnimation(
+  initUploadLabel,
+  animateElTopBottom,
+  "#arrow",
+  0,
+  -10,
+);
+
+initUploadLabel.addEventListener("click", function () {
+  animateElTopBottom(this.querySelector("#arrow"), -10, -125);
+});

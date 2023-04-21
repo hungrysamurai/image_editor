@@ -1,5 +1,12 @@
 import { gsap } from "gsap";
 
+/**
+ * @property {Function} animateElTopBottom - animate element by moving on Y axis
+ * @param {HTMLElement} el - DOM element to animate
+ * @param {number} startPos 
+ * @param {number} endPos 
+ * @returns {void}
+ */
 const animateElTopBottom = (el, startPos, endPos) => {
   gsap.fromTo(
     el,
@@ -12,6 +19,13 @@ const animateElTopBottom = (el, startPos, endPos) => {
   );
 };
 
+/**
+ * @property {Function} animateElLeftRight - animate element by moving on X axis
+ * @param {HTMLElement} el - DOM element to animate
+ * @param {number} startPos 
+ * @param {number} endPos 
+ * @returns {void}
+ */
 const animateElLeftRight = (el, startPos, endPos) => {
   gsap.fromTo(
     el,
@@ -24,6 +38,17 @@ const animateElLeftRight = (el, startPos, endPos) => {
   );
 };
 
+
+/**
+ * @property {Function} animateElZoom - animate element by zooming it in/out
+ * @param {HTMLElement} el - DOM element to animate
+ * @param {number} startRatio 
+ * @param {number} endRatio
+ * @param {number} easeRatio
+ * @param {number} opacityStart - initial opacity
+ * @param {number} opacityEnd - target opacity
+ * @returns {void}
+ */
 const animateElZoom = (
   el,
   startRatio,
@@ -49,6 +74,14 @@ const animateElZoom = (
   );
 };
 
+/**
+ * @property {Function} animateElRotation - animate element by rotating
+ * @param {HTMLElement} el - DOM element to animate
+ * @param {number} startPos
+ * @param {number} endPos
+ * @param {number} easeRatio
+ * @returns {void}
+ */
 const animateElRotation = (el, startPos, endPos, easeRatio = 0.4) => {
   gsap.fromTo(
     el,
