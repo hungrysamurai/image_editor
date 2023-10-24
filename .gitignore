@@ -2,3 +2,5 @@
 /.parcel-cache
 /build
 /node_modules
+/dev
+/build

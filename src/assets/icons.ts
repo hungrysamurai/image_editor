@@ -1,4 +1,6 @@
-const icons = {
+import { IconsList } from '../ts/types/types';
+
+const icons: IconsList = {
   uploadNewImage: `<svg
         width="40"
         height="30"

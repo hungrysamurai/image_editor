@@ -11,60 +11,56 @@ import {
 
 /**
  * If mobile - true, else - false
- * @type {boolean}
  */
-const isMobile = window.matchMedia("(pointer:coarse)").matches;
+const isMobile: boolean = window.matchMedia("(pointer:coarse)").matches;
 
 // DOM elements
-const cpContainer = document.querySelector(".control-panel-container");
-const mainContainer = document.querySelector(".main-container");
-const toolContainer = document.querySelector(".tool-container");
+const cpContainer = document.querySelector(".control-panel-container") as HTMLDivElement;
+const mainContainer = document.querySelector(".main-container") as HTMLDivElement;
+const toolContainer = document.querySelector(".tool-container") as HTMLDivElement;
 
 /**
  * Array of DOM elements that will hold ImageEditor components
- * @type {Array}
  */
-const DOMContainers = [cpContainer, mainContainer, toolContainer];
+const DOMContainers: HTMLDivElement[] = [cpContainer, mainContainer, toolContainer];
 
 /**
  * Array of DOM elements that will hold ImageEditors tools panels
- * @type {Array}
  */
-const toolContainers = [
-  toolContainer.querySelector(".crop-controls"),
-  toolContainer.querySelector(".paint-controls"),
-  toolContainer.querySelector(".filters-controls"),
-  toolContainer.querySelector(".rotation-controls"),
+const toolContainers: HTMLDivElement[] = [
+  toolContainer.querySelector(".crop-controls") as HTMLDivElement,
+  toolContainer.querySelector(".paint-controls") as HTMLDivElement,
+  toolContainer.querySelector(".filters-controls") as HTMLDivElement,
+  toolContainer.querySelector(".rotation-controls") as HTMLDivElement,
 ];
 
 // Upload input element
-const uploadInput = document.querySelector("#upload-input");
-const initUploadLabel = document.querySelector("#initial-upload");
+const uploadInput = document.querySelector("#upload-input") as HTMLInputElement;
+const initUploadLabel = document.querySelector("#initial-upload") as HTMLLabelElement;
+
+// Initial Upload button
+const initialUploadButton = toolContainer.querySelector(".placeholder-button") as HTMLDivElement;
 
 // Drag'n'Drop input element
-const dragArea = document.querySelector(".drag-area");
+const dragArea = document.querySelector(".drag-area") as HTMLDivElement;
 
 // Init
-/**
- * Current ImageEditor object
- * @type {Object}
- */
-let currentEditor;
-
 /**
  * Current mode
  * @type {string}
  */
-let currentMode;
+let currentMode: string;
 
 // Event listeners
 
 // Button upload
 uploadInput.addEventListener("change", (e) => {
-  if (e.target.files.length !== 1) return;
-  if (!e.target.files[0].type.startsWith("image/")) return;
+  if (e.target instanceof HTMLInputElement && e.target.files) {
+    if (e.target.files.length !== 1) return;
+    if (!e.target.files[0].type.startsWith("image/")) return;
 
-  uploadFile(e.target.files[0]);
+    uploadFile(e.target.files[0]);
+  }
 });
 
 // Drag'n'Drop upload
@@ -85,11 +81,13 @@ dragArea.addEventListener("dragleave", () => {
 
 dragArea.addEventListener("drop", (e) => {
   let dt = e.dataTransfer;
-  let file = dt.files[0];
+  if (dt) {
+    let file = dt.files[0];
 
-  if (!file.type.startsWith("image/")) return;
+    if (!file.type.startsWith("image/")) return;
 
-  uploadFile(file);
+    uploadFile(file);
+  }
 });
 
 // Functions
@@ -97,21 +95,23 @@ dragArea.addEventListener("drop", (e) => {
 /**
  * @property {Function} uploadFile - upload file, init new ImageEditor, initially activate crop-mode, add events on ImageEditor DOM elements
  * @param {Object} file - file object from input 
- * @returns {void}
  */
-function uploadFile(file) {
-  // Initially delete upload button
-  if (document.querySelector(".placeholder-button")) {
-    document.querySelector(".placeholder-button").remove();
+function uploadFile(file: File): void {
+  if (!ImageEditor.getInstance()) {
+    // Initially delete upload button & drag area
+    initialUploadButton.remove();
+    dragArea.remove();
+
+    // Init instance of ImageEditor
+    ImageEditor.create(DOMContainers, file, isMobile)
+  } else {
+    ImageEditor.reset(file)
   }
 
-  mainContainer.innerHTML = "";
-  cpContainer.innerHTML = "";
-
   // Remove old event listener for keyboard shortcuts 
-  document.removeEventListener('keydown', keyboardShortcuts);
+  // document.removeEventListener('keydown', keyboardShortcuts);
 
-  currentEditor = new ImageEditor(DOMContainers, file, isMobile);
+  // currentEditor = new ImageEditor(DOMContainers, file, isMobile);
 
   initEvents();
   activateMode("crop", true);
@@ -123,44 +123,44 @@ function uploadFile(file) {
   */
 function initEvents() {
   // Tools
-  const aspectRatioBtns = currentEditor.cropperControlsContainer
+  const aspectRatioBtns = ImageEditor.getInstance().cropperControlsContainer
     .querySelector(".aspect-ratio-buttons")
     .querySelectorAll("button");
-  const rotateReflectBtns = currentEditor.cropperControlsContainer
+  const rotateReflectBtns = ImageEditor.getInstance().cropperControlsContainer
     .querySelector(".rotation-buttons")
     .querySelectorAll("button");
 
-  const paintingBrush = currentEditor.brushModeBtn;
-  const eraserBrush = currentEditor.eraserModeBtn;
-  const blurBrush = currentEditor.blurModeBtn;
+  const paintingBrush = ImageEditor.getInstance().brushModeBtn;
+  const eraserBrush = ImageEditor.getInstance().eraserModeBtn;
+  const blurBrush = ImageEditor.getInstance().blurModeBtn;
 
   // Mode switching events
-  currentEditor.cropModeBtn.addEventListener("click", () => {
+  ImageEditor.getInstance().cropModeBtn.addEventListener("click", () => {
     activateMode("crop");
     removeToolActiveStates(aspectRatioBtns);
   });
 
-  currentEditor.paintModeBtn.addEventListener("click", () => {
+  ImageEditor.getInstance().paintModeBtn.addEventListener("click", () => {
     activateMode("paint");
     removeToolActiveStates(aspectRatioBtns);
   });
 
-  currentEditor.filtersModeBtn.addEventListener("click", () => {
+  ImageEditor.getInstance().filtersModeBtn.addEventListener("click", () => {
     activateMode("filters");
     removeToolActiveStates(aspectRatioBtns);
   });
 
-  currentEditor.rotationModeBtn.addEventListener("click", () => {
+  ImageEditor.getInstance().rotationModeBtn.addEventListener("click", () => {
     activateMode("rotation");
     removeToolActiveStates(aspectRatioBtns);
   });
 
-  currentEditor.applyPaintingCanvasBtn.addEventListener("click", () => {
+  ImageEditor.getInstance().applyPaintingCanvasBtn.addEventListener("click", () => {
     activateMode("crop");
   });
 
   // Undo behaviour
-  currentEditor.cropperUndoBtn.addEventListener("click", () => {
+  ImageEditor.getInstance().cropperUndoBtn.addEventListener("click", () => {
     removeToolActiveStates(aspectRatioBtns);
   });
 
@@ -171,7 +171,7 @@ function initEvents() {
 
       removeToolActiveStates(aspectRatioBtns);
       if (currentBtn.id === "cropper-aspect-free-btn") {
-        if (!currentEditor.cropper.cropped) {
+        if (!ImageEditor.getInstance().cropper.cropped) {
           currentBtn.classList.toggle("active");
         }
       } else {
@@ -181,7 +181,7 @@ function initEvents() {
   });
 
   // Apply crop
-  currentEditor.cropperBtnApply.addEventListener("click", () => {
+  ImageEditor.getInstance().cropperBtnApply.addEventListener("click", () => {
     removeToolActiveStates(aspectRatioBtns);
   });
 
@@ -213,7 +213,7 @@ function initEvents() {
     setPaintBrush();
   });
 
-  addMicroAnimations();
+  // addMicroAnimations();
 }
 
 
@@ -227,35 +227,35 @@ function initEvents() {
 function activateMode(mode, newFile) {
 
   if (newFile) {
-    currentEditor.cropModeBtn.classList.add("active");
+    ImageEditor.getInstance().cropModeBtn.classList.add("active");
   }
 
   if (currentMode === mode) return;
 
-  if (currentMode === "paint" && currentEditor.paintingCanvas) {
-    currentEditor.cropper.enable();
+  if (currentMode === "paint" && ImageEditor.getInstance().paintingCanvas) {
+    ImageEditor.getInstance().cropper.enable();
 
-    if (currentEditor.blurCanvas) {
-      currentEditor.clearBlurCanvas();
+    if (ImageEditor.getInstance().blurCanvas) {
+      ImageEditor.getInstance().clearBlurCanvas();
     }
 
-    currentEditor.paintingCanvas.remove();
-    currentEditor.paintingCanvas = undefined;
-    currentEditor.setZoombuttonsState("both-active");
-    currentEditor.setUndoBtn(false);
+    ImageEditor.getInstance().paintingCanvas.remove();
+    ImageEditor.getInstance().paintingCanvas = undefined;
+    ImageEditor.getInstance().setZoombuttonsState("both-active");
+    ImageEditor.getInstance().setUndoBtn(false);
 
     if (!isMobile) {
-      currentEditor.initBrushCursor(undefined, false);
+      ImageEditor.getInstance().initBrushCursor(undefined, false);
     }
 
   }
 
   if (currentMode === "filters") {
-    currentEditor.resetFilters();
+    ImageEditor.getInstance().resetFilters();
   }
 
   if (currentMode === "rotation") {
-    currentEditor.resetRotation();
+    ImageEditor.getInstance().resetRotation();
   }
 
   // Set current mode to new
@@ -268,7 +268,7 @@ function activateMode(mode, newFile) {
   document.querySelector(`.${mode}-controls`).classList.remove("hide");
 
   // Update icons in cp
-  currentEditor.cpContainer
+  ImageEditor.getInstance().cpContainer
     .querySelectorAll(".cp-toolbox button")
     .forEach((button) => {
       button.classList.remove("active");
@@ -278,11 +278,11 @@ function activateMode(mode, newFile) {
     });
 
   if (mode === "paint") {
-    currentEditor.cropper.clear();
-    currentEditor.cropper.disable();
-    currentEditor.createPaintingCanvas();
-    currentEditor.setZoombuttonsState("paint");
-    currentEditor.setUndoBtn(true);
+    ImageEditor.getInstance().cropper.clear();
+    ImageEditor.getInstance().cropper.disable();
+    ImageEditor.getInstance().createPaintingCanvas();
+    ImageEditor.getInstance().setZoombuttonsState("paint");
+    ImageEditor.getInstance().setUndoBtn(true);
 
     setPaintBrush();
   }
@@ -290,7 +290,7 @@ function activateMode(mode, newFile) {
 
 /**
  * 
- * @property {Function} activateMode - Prevents default for some events
+ * @property {Function} preventDefaults - Prevents default for some events
  * @param {DragEvent} e - event object that cames from drag and drop events
  * @returns {void}
  */
@@ -315,9 +315,9 @@ function removeToolActiveStates(elements) {
  * @returns {void}
  */
 function setPaintBrush() {
-  currentEditor.brushModeBtn.classList.add("active");
-  currentEditor.eraserModeBtn.classList.remove("active");
-  currentEditor.blurModeBtn.classList.remove("active");
+  ImageEditor.getInstance().brushModeBtn.classList.add("active");
+  ImageEditor.getInstance().eraserModeBtn.classList.remove("active");
+  ImageEditor.getInstance().blurModeBtn.classList.remove("active");
 }
 
 /**
@@ -359,7 +359,7 @@ function addMicroAnimations() {
 
   // Formats Btn
   addBasicMicroAnimation(
-    currentEditor.imageFormatBtn,
+    ImageEditor.getInstance().imageFormatBtn,
     animateElZoom,
     'svg',
     1,
