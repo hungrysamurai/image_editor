@@ -1,14 +1,46 @@
+import Cropper from 'cropperjs';
+
 import {
+  EditorMode,
   ImageFormats,
   ImageMimeType,
   Filters,
   FiltersState,
-  CropperExtended,
   LoadingState,
   ZoomButtonsState,
   BrushSizeAction,
-  CreateDOMElementParams
+  BrushDOMElementsObject,
+  BrushMode
 } from './types/imageEditor.types';
+
+import {
+  createDOMElement,
+  addKeyboardShortcuts,
+  setActivePaintModeDOM
+} from './utils';
+
+import {
+  createCropperControls,
+  createPaintingControls,
+  createFiltersControls,
+  createRotationControls
+} from './DOMelementsCreators';
+
+import {
+  initImageDOM,
+  initCPDOM,
+} from './DOMInitializers';
+
+import {
+  addCropperEvents,
+  addPaintingEvents,
+  addFiltersEvents,
+  addRotationEvents
+} from './eventListeners_toolContainer';
+
+import {
+  addCPEvents
+} from './eventListeners_controlPanel';
 
 import { canvasRGBA } from 'stackblur-canvas'
 
@@ -22,11 +54,46 @@ import icons from "../assets/icons";
  * Class that generates ImageEditor and inits it in DOM
  */
 export default class ImageEditor {
-
   private static instanceRef: ImageEditor;
 
   static getInstance(): undefined | ImageEditor {
     return ImageEditor.instanceRef;
+  }
+
+  static editorMode: EditorMode = EditorMode.Crop;
+
+  /**
+* @property {Function} createLoader - Create loader element in DOM
+*/
+  static createLoader(container: HTMLDivElement): void {
+    ImageEditor.loadingScreen = createDOMElement({
+      elementName: 'div',
+      className: 'loading-screen hide',
+      content: icons.loadingSpinner
+    });
+    container.insertAdjacentElement("beforebegin", ImageEditor.loadingScreen);
+  }
+
+
+  /**
+  * @property {Function} loading - show/hide loader
+  * @param {string} action
+  * @param {boolean} initial - first run - true
+  */
+  static loading(action: LoadingState, initial?: boolean): void {
+    if (action === LoadingState.Hide) {
+      ImageEditor.loadingScreen.classList.add(LoadingState.Hide);
+      if (!initial) {
+        ImageEditor.instanceRef.cpContainer.style.pointerEvents = "auto";
+        ImageEditor.instanceRef.toolContainer.style.pointerEvents = "auto";
+      }
+    } else if (action === LoadingState.Show) {
+      ImageEditor.loadingScreen.classList.remove(LoadingState.Hide);
+      if (!initial) {
+        ImageEditor.instanceRef.cpContainer.style.pointerEvents = "none";
+        ImageEditor.instanceRef.toolContainer.style.pointerEvents = "none";
+      }
+    }
   }
 
   static create(DOMContainers: HTMLDivElement[], imageFile: File, isMobile: boolean) {
@@ -35,7 +102,27 @@ export default class ImageEditor {
     )
   }
 
-  static reset(imageFile: File) { }
+  static reset(imageFile: File) {
+    ImageEditor.loading(LoadingState.Show);
+    const { cropper } = ImageEditor.instanceRef;
+
+    // Reset current cropper
+    cropper.reset();
+    cropper.clear();
+    cropper.setCanvasData(cropper.imageCenter);
+
+    // Replace image
+    cropper.replace(URL.createObjectURL(imageFile));
+
+    // Clear history, and set initial canvas to new image
+    ImageEditor.instanceRef.#cropperHistory.length = 0;
+    ImageEditor.instanceRef.initialCanvas = null;
+
+    ImageEditor.instanceRef.activateEditorMode(EditorMode.Crop, true);
+  }
+
+  static loadingScreen: HTMLDivElement;
+
   /**
    * @property {Array} #imageFormats - array of image formats and corresponding settings
    */
@@ -51,9 +138,9 @@ export default class ImageEditor {
   currentImageFormatIndex: number;
 
   /**
-   * @property {Object} #filtersState - filters values that applies to image preview
+   * @property {Object} filtersState - filters values that applies to image preview
    */
-  #filtersState: FiltersState = {
+  filtersState: FiltersState = {
     brightness: 100,
     contrast: 100,
     saturation: 100,
@@ -70,12 +157,12 @@ export default class ImageEditor {
 
   imageName: string;
 
-  loadingScreen!: HTMLDivElement;
-
   cropperControlsContainer: HTMLDivElement;
   paintingControlsContainer: HTMLDivElement;
   filterControlsContainer: HTMLDivElement;
   rotationControlsContainer: HTMLDivElement;
+
+  toolContainers!: HTMLDivElement[];
 
   cropModeBtn!: HTMLButtonElement;
   cropperZoomInBtn!: HTMLButtonElement;
@@ -107,6 +194,8 @@ export default class ImageEditor {
   blurModeBtn!: HTMLButtonElement;
   applyPaintingCanvasBtn!: HTMLButtonElement;
   clearPaintingCanvasBtn!: HTMLButtonElement;
+
+  brushToolsObject: BrushDOMElementsObject;
 
   filtersModeBtn!: HTMLButtonElement;
 
@@ -150,7 +239,7 @@ export default class ImageEditor {
   /**
 * @property {Cropper} cropper - cropper instance
 */
-  cropper: CropperExtended
+  cropper: Cropper
 
   /**
  * @property {Array} #cropperHistory - array of previous canvas elements
@@ -196,7 +285,7 @@ export default class ImageEditor {
   /**
    * @property {HTMLElement} initialCanvas - initially loaded canvas element, first ([0]) element in #cropperHistory array
    */
-  initialCanvas!: HTMLCanvasElement;
+  initialCanvas!: HTMLCanvasElement | null;
 
   /**
    *
@@ -206,15 +295,16 @@ export default class ImageEditor {
    * @this ImageEditor
    */
   private constructor(DOMContainers: HTMLDivElement[], imageFile: File, isMobile: boolean) {
+
+    ImageEditor.loading(LoadingState.Show, true);
+
     const [cpContainer, mainContainer, toolContainer] = DOMContainers;
 
     this.cpContainer = cpContainer;
     this.mainContainer = mainContainer;
     this.toolContainer = toolContainer;
 
-    this.createLoader();
-    this.loading(LoadingState.Show);
-
+    // Get individual tool container
     this.cropperControlsContainer =
       this.toolContainer.querySelector(".crop-controls") as HTMLDivElement;
     this.paintingControlsContainer =
@@ -225,6 +315,14 @@ export default class ImageEditor {
     this.rotationControlsContainer =
       this.toolContainer.querySelector(".rotation-controls") as HTMLDivElement;
 
+    // Group tool containers to array
+    this.toolContainers = [
+      this.cropperControlsContainer,
+      this.paintingControlsContainer,
+      this.filterControlsContainer,
+      this.rotationControlsContainer,
+    ]
+
     this.isMobile = isMobile;
 
     // Set name of file
@@ -233,14 +331,14 @@ export default class ImageEditor {
     this.currentImageFormatIndex = 3;
     this.brushSize = 20;
 
-    this.createCropperControls();
-    this.createPaintingControls();
-    this.createFiltersControls();
-    this.createRotationControls();
+    createCropperControls(this);
+    createPaintingControls(this);
+    createFiltersControls(this);
+    createRotationControls(this);
 
     // Init cropper
-    this.cropper = new CropperExtended(
-      this.initImageDOM(URL.createObjectURL(imageFile)),
+    this.cropper = new Cropper(
+      initImageDOM(this, URL.createObjectURL(imageFile)),
       //Cropper settings object
       {
         viewMode: 2,
@@ -250,7 +348,6 @@ export default class ImageEditor {
         autoCrop: false,
         autoCropArea: 1,
         ready: () => {
-
           // Apply filters to current preview image
           this.previewImage = this.cropper.image;
           this.applyFilters(this.previewImage);
@@ -277,7 +374,7 @@ export default class ImageEditor {
           // Add cropper events if it is first initialiization
           this.#croppersCounter++;
           if (this.#croppersCounter === 1) {
-            this.addCropperEvents();
+            addCropperEvents(this);
           }
 
           // Save initial canvas in history
@@ -297,7 +394,7 @@ export default class ImageEditor {
             this.applyChange();
           }
 
-          this.loading(LoadingState.Hide);
+          ImageEditor.loading(LoadingState.Hide);
         },
 
         zoom: () => {
@@ -332,811 +429,96 @@ export default class ImageEditor {
       }
     );
 
-    this.initCPDOM();
+    initCPDOM(this);
 
-    this.addPaintingEvents();
-    this.addFiltersEvents();
-    this.addRotationEvents();
+    addPaintingEvents(this);
+    addFiltersEvents(this);
+    addRotationEvents(this);
+
+    addKeyboardShortcuts(this);
 
     this.setImageFormat(imageFile.type as ImageMimeType);
-  }
 
-  /**
-  * @property {Function} createLoader - Create loader element in DOM
-  */
-  createLoader(): void {
-    this.loadingScreen = this.createDOMElement({
-      elementName: 'div',
-      className: 'loading-screen hide',
-      content: icons.loadingSpinner
-    });
-    this.mainContainer.insertAdjacentElement("beforebegin", this.loadingScreen);
-  }
 
-  /**
-  * @property {Function} loading - show/hide loader
-  * @param {string} action
-  */
-  loading(action: LoadingState): void {
-    if (action === LoadingState.Hide) {
-      this.loadingScreen.classList.add(LoadingState.Hide);
-      this.cpContainer.style.pointerEvents = "auto";
-      this.toolContainer.style.pointerEvents = "auto";
-    } else if (action === LoadingState.Show) {
-      this.loadingScreen.classList.remove(LoadingState.Hide);
-      this.cpContainer.style.pointerEvents = "none";
-      this.toolContainer.style.pointerEvents = "none";
+    this.brushToolsObject = {
+      [BrushMode.Paint]: this.brushModeBtn,
+      [BrushMode.Blur]: this.blurModeBtn,
+      [BrushMode.Eraser]: this.eraserModeBtn
     }
+
+    addCPEvents(this);
+    this.activateEditorMode(EditorMode.Crop, true);
   }
 
 
   /**
-  * @property {Function} createCropperControls - Create all cropper related stuff in DOM
-  */
-  createCropperControls(): void {
-    // Create cropper button in cp
-    this.cropModeBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'crop-mode',
-      content: icons.cropMode
-    });
-
-    // Create zoom +/- buttons in cp
-    this.cropperZoomInBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-zoom-in-btn',
-      content: icons.zoomIn
-    });
-
-    this.cropperZoomOutBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-zoom-out-btn',
-      content: icons.zoomOut
-    });
-
-    // Create undo button in cp
-    this.cropperUndoBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-undo-btn',
-      content: icons.undo
-    });
-
-    // Create format button in cp
-    this.imageFormatBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-format-btn',
-      content: icons.formatJPEG100
-    });
-
-    // Create cropper downlad button in cp
-    this.cropperDownloadBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-download-btn',
-      content: icons.downloadImage
-    });
-
-    // Aspect Ratio crop buttons
-    const aspectRationButtonsContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'aspect-ratio-buttons',
-      parentToAppend: this.cropperControlsContainer
-    })
-
-    this.cropperBtnAspectSquare = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-aspect-square-btn',
-      content: icons.aspectRatioSquare,
-      parentToAppend: aspectRationButtonsContainer
-    });
-
-    this.cropperBtnAspect34 = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-aspect-3-4-btn',
-      content: icons.aspectRatio34,
-      parentToAppend: aspectRationButtonsContainer
-    });
-
-    this.cropperBtnAspect43 = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-aspect-4-3-btn',
-      content: icons.aspectRatio43,
-      parentToAppend: aspectRationButtonsContainer
-    });
-
-    this.cropperBtnAspect169 = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-aspect-16-9-btn',
-      content: icons.aspectRatio169,
-      parentToAppend: aspectRationButtonsContainer
-    });
-
-    this.cropperBtnAspect916 = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-aspect-9-16-btn',
-      content: icons.aspectRatio916,
-      parentToAppend: aspectRationButtonsContainer
-    });
-
-    this.cropperBtnAspectFree = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-aspect-free-btn',
-      content: icons.aspectRatioFree,
-      parentToAppend: aspectRationButtonsContainer
-    });
-
-    // Rotation buttons
-    const rotationButtonsContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'rotation-buttons',
-      parentToAppend: this.cropperControlsContainer
-    })
-
-    this.cropperBtnRotateRight = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-rotate-right-btn',
-      content: icons.rotateRight,
-      parentToAppend: rotationButtonsContainer
-    });
-
-    this.cropperBtnRotateLeft = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-rotate-left-btn',
-      content: icons.rotateLeft,
-      parentToAppend: rotationButtonsContainer
-    });
-
-    this.cropperBtnReflectX = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-reflect-x-btn',
-      content: icons.reflectX,
-      parentToAppend: rotationButtonsContainer
-    });
-
-    this.cropperBtnReflectY = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-reflect-y-btn',
-      content: icons.reflectY,
-      parentToAppend: rotationButtonsContainer
-    });
-
-    // Apply crop button
-    const applyCropButtonContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'apply-crop-container',
-      parentToAppend: this.cropperControlsContainer
-    })
-
-    this.cropperBtnApply = this.createDOMElement({
-      elementName: 'button',
-      id: 'cropper-apply-btn',
-      content: icons.applyCrop,
-      parentToAppend: applyCropButtonContainer
-    });
-  }
-
-  /**
- * @property {Function} createPaintingControls - Create all painting stuff in DOM
+ * 
+ * @property {Function} activateEditorMode - Activate mode. Initially - crop mode. 
+ * @param {string} mode - new mode of ImageEditor
+ * @param {boolean} isNewImage - if it is first initialization
  */
-  createPaintingControls(): void {
-    // Create paint button in cp
-    this.paintModeBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'paint-mode',
-      content: icons.paintingMode
-    });
-
-    const paintingToolsContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'painting-tools',
-      parentToAppend: this.paintingControlsContainer
-    })
-
-    // Color picker
-    this.colorPicker = this.createDOMElement({
-      elementName: 'input',
-      id: 'color-picker',
-      parentToAppend: paintingToolsContainer,
-      attributes: { type: 'color' }
-    });
-
-    // Brush size options
-    const brushSizeSettingsContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'brush-size-settings',
-      parentToAppend: paintingToolsContainer
-    });
-
-    this.decreaseBrushSize = this.createDOMElement({
-      elementName: 'button',
-      id: 'decrease-brush',
-      parentToAppend: brushSizeSettingsContainer,
-      content: icons.brushDecrease
-    });
-
-    this.brushSizeEl = this.createDOMElement({
-      elementName: 'span',
-      id: 'size-brush',
-      parentToAppend: brushSizeSettingsContainer,
-    });
-
-    this.brushSizeEl.textContent = this.brushSize.toString();
-
-    this.increaseBrushSize = this.createDOMElement({
-      elementName: 'button',
-      id: 'increase-brush',
-      parentToAppend: brushSizeSettingsContainer,
-      content: icons.brushIncrease
-    });
-
-    // Brush mode options
-    this.brushModeBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'painting-brush',
-      parentToAppend: paintingToolsContainer,
-      content: icons.pencil
-    });
-
-    this.eraserModeBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'eraser-brush',
-      parentToAppend:
-        paintingToolsContainer,
-      content: icons.eraser
-    });
-
-    this.blurModeBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'blur-brush',
-      parentToAppend: paintingToolsContainer,
-      content: icons.blurTool
-    });
-
-    // Apply/clear painting options
-    const paintingApplyButtonsContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'painting-apply-container',
-      parentToAppend:
-        paintingToolsContainer
-    });
-
-    this.applyPaintingCanvasBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'apply-drawing-canvas',
-      parentToAppend: paintingApplyButtonsContainer,
-      content: icons.paintApply
-    });
-
-    this.clearPaintingCanvasBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'clear-drawing-canvas',
-      parentToAppend: paintingApplyButtonsContainer,
-      content: icons.paintClean
-    });
-  }
-
-  /**
-  * @property {Function} createFiltersControls - Create all filters stuff in DOM
-  */
-  createFiltersControls(): void {
-    // Create filters button in cp
-    this.filtersModeBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'filters-mode',
-      content: icons.filtersMode
-    });
-
-    // Create filters controls in DOM
-    // Left Col
-    const filtersLeftColumnContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'filters-left-col',
-      parentToAppend: this.filterControlsContainer
-    });
-
-    // Brightness
-    const brightnessSliderContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'filter-range-slider',
-      parentToAppend: filtersLeftColumnContainer
-    });
-
-    const brightnessSliderLabel = this.createDOMElement({
-      elementName: 'label',
-      parentToAppend: brightnessSliderContainer,
-      content: icons.filterBrightness,
-      attributes: { for: 'brightness' }
-    });
-
-    const brightnessSliderInput = this.createDOMElement({
-      elementName: 'input',
-      parentToAppend: brightnessSliderContainer,
-      id: 'brightness',
-      attributes: { type: 'range', value: '100', min: '0', max: '200' }
-    });
-
-    this.filtersSliders.push(brightnessSliderInput);
-
-    // Contrast
-    const contrastSliderContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'filter-range-slider',
-      parentToAppend: filtersLeftColumnContainer
-    });
-
-    const contrastSliderLabel = this.createDOMElement({
-      elementName: 'label',
-      parentToAppend: contrastSliderContainer,
-      content: icons.filterContrast,
-      attributes: { for: 'contrast' }
-    });
-
-    const contrastSliderInput = this.createDOMElement({
-      elementName: 'input',
-      parentToAppend: contrastSliderContainer,
-      id: 'contrast',
-      attributes: { type: 'range', value: '100', min: '0', max: '200' }
-    });
-
-    this.filtersSliders.push(contrastSliderInput);
-
-    // Saturation
-    const saturationSliderContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'filter-range-slider',
-      parentToAppend: filtersLeftColumnContainer
-    });
-
-    const saturationSliderLabel = this.createDOMElement({
-      elementName: 'label',
-      parentToAppend: saturationSliderContainer,
-      content: icons.filterSaturation,
-      attributes: { for: 'saturation' }
-    });
-
-    const saturationSliderInput = this.createDOMElement({
-      elementName: 'input',
-      parentToAppend: saturationSliderContainer,
-      id: 'saturation',
-      attributes: { type: 'range', value: '100', min: '0', max: '200' }
-    });
-
-    this.filtersSliders.push(saturationSliderInput);
-
-    // Right Col
-    const filtersRightColumnContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'filters-right-col',
-      parentToAppend: this.filterControlsContainer
-    });
-
-    // Inversion
-    const inversionSliderContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'filter-range-slider',
-      parentToAppend: filtersRightColumnContainer
-    });
-
-    const inversionSliderLabel = this.createDOMElement({
-      elementName: 'label',
-      parentToAppend: inversionSliderContainer,
-      content: icons.filterInversion,
-      attributes: { for: 'inversion' }
-    });
-
-    const inversionSliderInput = this.createDOMElement({
-      elementName: 'input',
-      parentToAppend: inversionSliderContainer,
-      id: 'inversion',
-      attributes: { type: 'range', value: '0', min: '0', max: '100' }
-    });
-
-    this.filtersSliders.push(inversionSliderInput);
-
-    // Blur
-    const blurSliderContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'filter-range-slider',
-      parentToAppend: filtersRightColumnContainer
-    });
-
-    const blurSliderLabel = this.createDOMElement({
-      elementName: 'label',
-      parentToAppend: blurSliderContainer,
-      content: icons.filterBlur,
-      attributes: { for: 'blur' }
-    });
-
-    const blurSliderInput = this.createDOMElement({
-      elementName: 'input',
-      parentToAppend: blurSliderContainer,
-      id: 'blur',
-      attributes: { type: 'range', value: '0', min: '0', max: '20' }
-    });
-
-    this.filtersSliders.push(blurSliderInput);
-
-    // Hue
-    const hueSliderContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'filter-range-slider',
-      parentToAppend: filtersRightColumnContainer
-    });
-
-    const hueSliderLabel = this.createDOMElement({
-      elementName: 'label',
-      parentToAppend: hueSliderContainer,
-      content: icons.filterHue,
-      attributes: { for: 'hue' }
-    });
-
-    const hueSliderInput = this.createDOMElement({
-      elementName: 'input',
-      parentToAppend: hueSliderContainer,
-      id: 'hue',
-      attributes: { type: 'range', value: '0', min: '0', max: '360' }
-    });
-
-    this.filtersSliders.push(hueSliderInput);
-
-
-    // Filters Apply/Reset buttons
-    const filtersApplyButtonsContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'filters-apply-reset',
-      parentToAppend: this.filterControlsContainer
-    });
-
-    this.resetFiltersBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'reset-filters',
-      parentToAppend: filtersApplyButtonsContainer, content: icons.filtersReset
-    });
-
-    this.applyFiltersBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'apply-filters',
-      parentToAppend: filtersApplyButtonsContainer,
-      content: icons.filtersApply
-    });
-  }
-
-  /**
-* @property {Function} createRotationControls - Create all rotation stuff in DOM
-*/
-  createRotationControls(): void {
-    // Create rotation button in cp
-    this.rotationModeBtn = this.createDOMElement({
-      elementName: 'button',
-      id: 'rotation-mode',
-      content: icons.rotationMode
-    });
-
-    const rotationSliderContainer = this.createDOMElement({ elementName: 'div', className: 'rotation-slider-container', parentToAppend: this.rotationControlsContainer });
-
-    const rotationSliderLabel = this.createDOMElement({
-      elementName: 'label',
-      parentToAppend: rotationSliderContainer,
-      attributes: { for: 'rotation-slider' }
-    });
-
-    this.imageRotationValue = this.createDOMElement({
-      elementName: 'span',
-      id: 'rotation-value',
-      content: '0',
-      parentToAppend: rotationSliderLabel
-    });
-
-    const rotationSliderElementsContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'slider-elements',
-      parentToAppend: rotationSliderContainer
-    });
-
-    this.imageRotationSlider = this.createDOMElement({
-      elementName: 'input',
-      id: 'rotation-slider',
-      parentToAppend: rotationSliderElementsContainer,
-      attributes: { type: 'range', step: '0.1', value: '0', min: '-180', max: '180' }
-    });
-
-    const rotationSliderRulerImageContainer = this.createDOMElement({
-      elementName: 'div',
-      parentToAppend: rotationSliderElementsContainer,
-      content: icons.rotationRuler
-    });
-
-    const rotationSliderButtonsContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'rotation-slider-buttons',
-      parentToAppend: this.rotationControlsContainer
-    });
-
-    this.imageRotationSliderReset = this.createDOMElement({
-      elementName: 'button',
-      id: 'reset-rotation-btn',
-      content: icons.rotationReset,
-      parentToAppend: rotationSliderButtonsContainer
-    });
-
-    this.imageRotationSliderApply = this.createDOMElement({
-      elementName: 'button',
-      id: 'apply-rotation-btn',
-      content: icons.rotationApply,
-      parentToAppend: rotationSliderButtonsContainer
-    });
-  }
-
-
-  /**
- * @property {Function} initImageDOM - creates image element from provided Blob URL
- * @param {string} blob - blob URL of image 
- * @returns {HTMLElement} - img element for Cropper
- */
-  initImageDOM(blob: string): HTMLImageElement {
-    this.mainContainer.innerHTML = "";
-    const imageContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'image-container',
-      parentToAppend:
-        this.mainContainer
-    });
-
-    const imageElement = this.createDOMElement({
-      elementName: 'img',
-      className: 'image-element',
-      parentToAppend: imageContainer,
-      attributes: { src: blob }
-    });
-
-    // Set aspect ratio of imageContainer and init aspectRatio
-    imageElement.onload = () => {
-      const aspectRatio =
-        imageElement.naturalWidth / imageElement.naturalHeight;
-
-      // Set asp-ratio of container
-      imageContainer.style.aspectRatio = `${aspectRatio} / 1`;
-    };
-
-    return imageElement;
-  }
-
-  /**
-  * @property {Function} initCPDOM - create and append control panet (top panel) elements in DOM
-  */
-  initCPDOM(): void {
-    // Add inner container
-    const inner = this.createDOMElement({
-      elementName: 'div',
-      className: 'inner-container',
-      parentToAppend: this.cpContainer
-    });
-
-    // Add tools buttons
-    const toolbox = this.createDOMElement({
-      elementName: 'div',
-      className: 'cp-toolbox',
-      parentToAppend: inner
-    });
-
-    toolbox.append(this.cropModeBtn);
-    toolbox.append(this.paintModeBtn);
-    toolbox.append(this.filtersModeBtn);
-    toolbox.append(this.rotationModeBtn);
-
-    // Add zoom buttons
-    const zoomButtons = this.createDOMElement({
-      elementName: 'div',
-      className: 'cp-zoom-buttons',
-      parentToAppend: inner
-    });
-
-    zoomButtons.append(this.cropperZoomInBtn);
-    zoomButtons.append(this.cropperZoomOutBtn);
-
-    // Add undo button
-    const undoContainer = this.createDOMElement({
-      elementName: 'div',
-      className: 'cp-undo-container',
-      parentToAppend: inner
-    })
-
-    undoContainer.append(this.cropperUndoBtn);
-
-    // Add upload/download buttons
-    const uploadDownloadBtns = this.createDOMElement({
-      elementName: 'div',
-      className: 'upload-download-buttons',
-      parentToAppend: inner
-    });
-
-    // Create new upload btn
-    this.uploadNewImgBtn = this.createDOMElement({
-      elementName: 'label',
-      className: 'upload-btn-top',
-      content: icons.uploadNewImage,
-      attributes: { for: 'upload-input' }
-    });
-
-    uploadDownloadBtns.append(this.imageFormatBtn);
-    uploadDownloadBtns.append(this.cropperDownloadBtn);
-    uploadDownloadBtns.append(this.uploadNewImgBtn);
-  }
-
-  /**
-  * @property {Function} createDOMElement - create DOM HTML Elements with given params
-  */
-  createDOMElement<tagName extends keyof HTMLElementTagNameMap>(params: CreateDOMElementParams<tagName>): HTMLElementTagNameMap[tagName] {
-    const element = document.createElement<tagName>(params.elementName);
-
-    if (params.id) {
-      element.id = params.id;
+  activateEditorMode(mode: EditorMode, isNewImage?: boolean): void {
+    if (isNewImage) {
+      this.cropModeBtn.classList.add("active");
     }
 
-    if (params.className) {
-      element.className = params.className;
-    }
+    if (ImageEditor.editorMode === mode && !isNewImage) return;
 
-    if (params.content) {
-      element.innerHTML = params.content;
-    }
+    if (ImageEditor.editorMode === EditorMode.Paint && this.paintingCanvas) {
+      this.cropper.enable();
 
-    if (params.parentToAppend) {
-      params.parentToAppend.appendChild(element);
-    }
-
-    if (params.attributes) {
-      for (const [name, value] of Object.entries(params.attributes)) {
-        element.setAttribute(name, value);
-      }
-    }
-
-    return element;
-  }
-
-  /**
- * @property {Function} addCropperEvents - Assign event listeners to crop stuff
- */
-  addCropperEvents(): void {
-    this.cropperZoomInBtn.addEventListener("click", () => {
-      this.cropper.zoom(0.1);
-    });
-
-    this.cropperZoomOutBtn.addEventListener("click", () => {
-      this.cropper.zoom(-0.1);
-    });
-
-    this.cropperUndoBtn.addEventListener("click", () => {
-      this.undoChange();
-    });
-
-    this.imageFormatBtn.addEventListener("click", () => {
-      this.updateImageFormat();
-    });
-
-    this.cropperDownloadBtn.addEventListener("click", () => {
-      this.downloadImage();
-    });
-
-    this.cropperBtnAspectSquare.addEventListener("click", () => {
-      this.cropper.crop();
-      this.cropper.setAspectRatio(1);
-    });
-
-    this.cropperBtnAspect34.addEventListener("click", () => {
-      this.cropper.crop();
-      this.cropper.setAspectRatio(1.333333);
-    });
-
-    this.cropperBtnAspect43.addEventListener("click", () => {
-      this.cropper.crop();
-      this.cropper.setAspectRatio(0.75);
-    });
-    this.cropperBtnAspect169.addEventListener("click", () => {
-      this.cropper.crop();
-      this.cropper.setAspectRatio(0.5625);
-    });
-    this.cropperBtnAspect916.addEventListener("click", () => {
-      this.cropper.crop();
-      this.cropper.setAspectRatio(1.777777);
-    });
-    this.cropperBtnAspectFree.addEventListener("click", () => {
-      if (this.cropper.cropped) {
-        this.cropper.clear();
-      } else {
-        this.cropper.options.autoCropArea = 1;
-        this.cropper.crop();
-        this.cropper.setAspectRatio(0);
-      }
-    });
-
-    this.cropperBtnRotateRight.addEventListener("click", () => {
-      this.cropper.clear();
-      this.cropper.rotate(90);
-      this.applyChange();
-    });
-
-    this.cropperBtnRotateLeft.addEventListener("click", () => {
-      this.cropper.clear();
-      this.cropper.rotate(-90);
-      this.applyChange();
-    });
-
-    this.cropperBtnReflectX.addEventListener("click", () => {
-      this.cropper.scaleX(this.cropper.getImageData().scaleX === -1 ? 1 : -1);
-      this.applyChange();
-    });
-
-    this.cropperBtnReflectY.addEventListener("click", () => {
-      this.cropper.scaleY(this.cropper.getImageData().scaleY === -1 ? 1 : -1);
-      this.applyChange();
-    });
-
-    this.cropperBtnApply.addEventListener("click", () => {
-      this.applyChange();
-    });
-  }
-
-  /**
- * @property {Function} addPaintingEvents - Assign event listeners to paint stuff
- */
-  addPaintingEvents(): void {
-    this.colorPicker.addEventListener(
-      "change",
-      (e) => (this.brushColor = (e.target as HTMLInputElement).value)
-    );
-
-    this.increaseBrushSize.addEventListener("click", () => {
-      this.changeBrushSize(BrushSizeAction.Increase);
-    });
-
-    this.decreaseBrushSize.addEventListener("click", () => {
-      this.changeBrushSize(BrushSizeAction.Decrease);
-    });
-
-    this.brushModeBtn.addEventListener("click", () => {
-      if (this.blurCanvas) {
-        this.applyBlurCanvas();
-      }
-
-      this.brushIsEraser = false;
-    });
-
-    this.eraserModeBtn.addEventListener("click", () => {
-      if (this.blurCanvas) {
-        this.applyBlurCanvas();
-      }
-
-      this.brushIsEraser = true;
-    });
-
-    this.blurModeBtn.addEventListener("click", () => {
-      this.brushIsEraser = false;
-      this.createBlurCanvas();
-
-      if (this.paintingCanvas) {
-        this.paintingCanvas
-          .getContext("2d")
-          ?.clearRect(0, 0, this.paintingCanvas.width, this.paintingCanvas.height);
-      }
-
-    });
-
-    this.clearPaintingCanvasBtn.addEventListener("click", () => {
       if (this.blurCanvas) {
         this.clearBlurCanvas();
-        this.createBlurCanvas();
       }
 
-      if (this.paintingCanvas) {
-        this.paintingCanvas
-          .getContext("2d")
-          ?.clearRect(0, 0, this.paintingCanvas.width, this.paintingCanvas.height);
+      this.paintingCanvas.remove();
+      this.paintingCanvas = undefined;
+      this.setZoombuttonsState(ZoomButtonsState.Active);
+      this.setUndoBtn(false);
+
+      if (!this.isMobile) {
+        this.initBrushCursor(undefined, false);
       }
+
+    }
+
+    if (ImageEditor.editorMode === EditorMode.Filters) {
+      this.resetFilters();
+    }
+
+    if (ImageEditor.editorMode === EditorMode.Rotation) {
+      this.resetRotation();
+    }
+
+    // Set current mode to new
+    ImageEditor.editorMode = mode;
+
+    // Activate proper tool container in DOM
+    this.toolContainers.forEach((container) => {
+      container.classList.add("hide");
     });
 
-    this.applyPaintingCanvasBtn.addEventListener("click", () => {
-      this.applyPaintingCanvas();
-    });
+    (this.toolContainer.querySelector(`.${mode}-controls`) as HTMLDivElement).classList.remove("hide");
+
+    // Update icons in cp
+    this.cpContainer
+      .querySelectorAll(".cp-toolbox button")
+      .forEach((button) => {
+        button.classList.remove("active");
+        if (button.id === `${mode}-mode`) {
+          button.classList.add("active");
+        }
+      });
+
+    if (mode === "paint") {
+      this.cropper.clear();
+      this.cropper.disable();
+      this.createPaintingCanvas();
+      this.setZoombuttonsState(ZoomButtonsState.Paint);
+      this.setUndoBtn(true);
+
+      setActivePaintModeDOM(this.brushToolsObject, BrushMode.Paint);
+    }
   }
 
   /**
@@ -1157,57 +539,6 @@ export default class ImageEditor {
     }
 
     this.brushSizeEl.textContent = this.brushSize.toString();
-  }
-
-  /**
-   * @property {Function} addFiltersEvents - Adds events on filter elements in DOM
-   */
-  addFiltersEvents(): void {
-    this.filtersSliders.forEach((filterRange) => {
-      filterRange.addEventListener("input", (e) => {
-        const currentElementId = (e.target as HTMLInputElement).id as Filters;
-
-        if (currentElementId in Filters) {
-          this.#filtersState[currentElementId] = Number((e.target as HTMLInputElement).value);
-        }
-
-        this.applyFilters(this.previewImage);
-        this.applyFilters(this.croppedBox);
-      });
-    });
-
-    this.resetFiltersBtn.addEventListener("click", () => {
-      this.resetFilters();
-    });
-
-    this.applyFiltersBtn.addEventListener("click", () => {
-      this.applyChange(true);
-    });
-  }
-
-
-  /**
-  * @property {Function} addRotationEvents - Adds events on rotation-related DOM elements
-  */
-  addRotationEvents(): void {
-    this.imageRotationSlider.addEventListener("input", (e) => {
-      if (!this.cropper.cropped) {
-        this.cropper.options.autoCropArea = 0.75;
-        this.cropper.setAspectRatio(0);
-      }
-
-      this.cropper.rotateTo(Number((e.target as HTMLInputElement).value));
-      this.imageRotationValue.textContent = (e.target as HTMLInputElement).value;
-      this.cropper.crop();
-    });
-
-    this.imageRotationSliderReset.addEventListener("click", () => {
-      this.resetRotation();
-    });
-
-    this.imageRotationSliderApply.addEventListener("click", () => {
-      this.applyRotation();
-    });
   }
 
   /**
@@ -1234,22 +565,22 @@ export default class ImageEditor {
   }
 
   /**
-   * @property {Function} applyFilters - apply values from #filtersState object as styles to DOM element
+   * @property {Function} applyFilters - apply values from filtersState object as styles to DOM element
    * @param {HTMLElement} - DOM element, img, to apply filters as styles
    * @returns {string} - string with filters properties to apply on canvas element
    */
   applyFilters(element?: HTMLImageElement): string {
 
     if (element) {
-      element.style.filter = `brightness(${this.#filtersState.brightness}%)contrast(${this.#filtersState.contrast}%)saturate(${this.#filtersState.saturation}%)invert(${this.#filtersState.inversion}%) blur(${this.#filtersState.blur}px)hue-rotate(${this.#filtersState.hue}deg)`;
+      element.style.filter = `brightness(${this.filtersState.brightness}%)contrast(${this.filtersState.contrast}%)saturate(${this.filtersState.saturation}%)invert(${this.filtersState.inversion}%) blur(${this.filtersState.blur}px)hue-rotate(${this.filtersState.hue}deg)`;
     }
 
-    return `brightness(${this.#filtersState.brightness}%)contrast(${this.#filtersState.contrast}%)saturate(${this.#filtersState.saturation}%)invert(${this.#filtersState.inversion}%) hue-rotate(${this.#filtersState.hue}deg)`;
+    return `brightness(${this.filtersState.brightness}%)contrast(${this.filtersState.contrast}%)saturate(${this.filtersState.saturation}%)invert(${this.filtersState.inversion}%) hue-rotate(${this.filtersState.hue}deg)`;
   }
 
 
   /**
-   * @property {Function} resetFilters - resets #filtersState object values to initial, reset filters styles of this.previewImage and this.croppedBox
+   * @property {Function} resetFilters - resets filtersState object values to initial, reset filters styles of this.previewImage and this.croppedBox
    */
   resetFilters(): void {
     this.filtersSliders.forEach((filterRange) => {
@@ -1259,14 +590,14 @@ export default class ImageEditor {
         filterRange.id === Filters.contrast
       ) {
         filterRange.value = '100';
-        this.#filtersState[filterRange.id] = 100;
+        this.filtersState[filterRange.id] = 100;
       } else if (
         filterRange.id === Filters.inversion ||
         filterRange.id === Filters.blur ||
         filterRange.id === Filters.hue
       ) {
         filterRange.value = '0';
-        this.#filtersState[filterRange.id] = 0;
+        this.filtersState[filterRange.id] = 0;
       }
     });
     this.applyFilters(this.previewImage);
@@ -1322,7 +653,7 @@ export default class ImageEditor {
           newImage.src = url;
 
           newImage.onload = () => {
-            this.loading(LoadingState.Hide);
+            ImageEditor.loading(LoadingState.Hide);
           };
 
           this.cropper.replace(newImage.src);
@@ -1338,7 +669,7 @@ export default class ImageEditor {
    * @param {boolean} filters - if true - draw all current filters (#this.filtersState object values) on canvas
    */
   applyChange(filters?: boolean): void {
-    this.loading(LoadingState.Show);
+    ImageEditor.loading(LoadingState.Show);
 
     let nextCanvas = this.cropper.getCroppedCanvas({
       minWidth: 256,
@@ -1359,7 +690,7 @@ export default class ImageEditor {
         0,
         nextCanvas.width,
         nextCanvas.height,
-        this.#filtersState.blur * 3
+        this.filtersState.blur * 3
       );
       ctx.drawImage(nextCanvas, 0, 0);
 
@@ -1375,14 +706,18 @@ export default class ImageEditor {
    * @property {Function} undoChange - return previous state
    */
   undoChange(): void {
-    this.loading(LoadingState.Show);
+    ImageEditor.loading(LoadingState.Show);
     if (this.#cropperHistory.length === 1) {
-      this.canvasReplace(this.initialCanvas);
+      if (this.initialCanvas) {
+        this.canvasReplace(this.initialCanvas);
+      }
       this.setUndoBtn();
       this.resetFilters();
     } else if (this.#cropperHistory.length === 2) {
       this.#cropperHistory.pop();
-      this.canvasReplace(this.initialCanvas);
+      if (this.initialCanvas) {
+        this.canvasReplace(this.initialCanvas);
+      }
       this.setUndoBtn();
       this.resetFilters();
     } else {
@@ -1400,7 +735,6 @@ export default class ImageEditor {
     let index;
 
     this.#imageFormats.forEach((format, i) => {
-      console.log(type);
 
       if (format[0] === type) {
         index = i;
@@ -1446,7 +780,7 @@ export default class ImageEditor {
       0,
       canvas.width,
       canvas.height,
-      this.#filtersState.blur * 3
+      this.filtersState.blur * 3
     );
 
     ctx.drawImage(canvas, 0, 0);
@@ -1887,10 +1221,10 @@ export default class ImageEditor {
  * @param {HTMLElement} canvas - current painting canvas
  * @param {boolean} state - init or remove custom cursor
  */
-  initBrushCursor(canvas: HTMLCanvasElement, state: boolean): void {
-    if (state) {
+  initBrushCursor(canvas: HTMLCanvasElement | undefined, state: boolean): void {
+    if (state && canvas) {
       canvas.addEventListener("mouseenter", () => {
-        this.brushCursor = this.createDOMElement({
+        this.brushCursor = createDOMElement({
           elementName: 'div',
           className: 'paint-brush-cursor'
         });
@@ -1928,7 +1262,7 @@ export default class ImageEditor {
     * @property {Function} applyPaintingCanvas - Save painting canvas and merge it with base canvas
     */
   applyPaintingCanvas(): void {
-    this.loading(LoadingState.Show);
+    ImageEditor.loading(LoadingState.Show);
     this.applyBlurCanvas();
 
     this.cropper.enable();

@@ -1,5 +1,34 @@
 import Cropper from "cropperjs";
 
+declare global {
+ interface Cropper {
+  image: HTMLImageElement;
+  viewBox: HTMLSpanElement;
+  croppedBox: HTMLImageElement;
+  zoomOutWidth: number;
+  cropped: boolean;
+  imageCenter: Cropper.CanvasData
+  options: Cropper.Options
+ }
+}
+
+export enum EditorMode {
+ Crop = "crop",
+ Paint = "paint",
+ Filters = "filters",
+ Rotation = "rotation"
+}
+
+export enum BrushMode {
+ Paint = "paint",
+ Blur = "blur",
+ Eraser = "eraser"
+}
+
+export type BrushDOMElementsObject = {
+ [key in BrushMode]: HTMLButtonElement
+}
+
 export enum ImageMimeType {
  JPEG = "image/jpeg",
  PNG = "image/png",
@@ -23,13 +52,6 @@ export type FiltersState = {
  [key in Filters]: number;
 }
 
-export enum EditorMode {
- Crop = "crop",
- Paint = "paint",
- Filters = "filters",
- Rotation = "rotation"
-}
-
 export enum LoadingState {
  Hide = 'hide',
  Show = 'show'
@@ -46,18 +68,8 @@ export enum BrushSizeAction {
  Decrease = 'decrease'
 }
 
-export class CropperExtended extends Cropper {
- image!: HTMLImageElement;
- viewBox!: HTMLSpanElement;
- croppedBox!: HTMLImageElement;
- zoomOutWidth!: number;
- cropped!: boolean;
- imageCenter!: Cropper.CanvasData
- options!: Cropper.Options
-}
-
-export interface CreateDOMElementParams<tagName> {
- elementName: tagName,
+export interface CreateDOMElementParams<TagName> {
+ elementName: TagName,
  id?: string,
  className?: string
  content?: string,

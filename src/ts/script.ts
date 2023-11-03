@@ -1,6 +1,7 @@
 import { gsap } from "gsap";
 
 import ImageEditor from "./imageEditor";
+
 import {
   animateElTopBottom,
   animateElLeftRight,
@@ -24,15 +25,15 @@ const toolContainer = document.querySelector(".tool-container") as HTMLDivElemen
  */
 const DOMContainers: HTMLDivElement[] = [cpContainer, mainContainer, toolContainer];
 
-/**
- * Array of DOM elements that will hold ImageEditors tools panels
- */
-const toolContainers: HTMLDivElement[] = [
-  toolContainer.querySelector(".crop-controls") as HTMLDivElement,
-  toolContainer.querySelector(".paint-controls") as HTMLDivElement,
-  toolContainer.querySelector(".filters-controls") as HTMLDivElement,
-  toolContainer.querySelector(".rotation-controls") as HTMLDivElement,
-];
+// /**
+//  * Array of DOM elements that will hold ImageEditors tools panels
+//  */
+// const toolContainers: HTMLDivElement[] = [
+//   toolContainer.querySelector(".crop-controls") as HTMLDivElement,
+//   toolContainer.querySelector(".paint-controls") as HTMLDivElement,
+//   toolContainer.querySelector(".filters-controls") as HTMLDivElement,
+//   toolContainer.querySelector(".rotation-controls") as HTMLDivElement,
+// ];
 
 // Upload input element
 const uploadInput = document.querySelector("#upload-input") as HTMLInputElement;
@@ -44,12 +45,14 @@ const initialUploadButton = toolContainer.querySelector(".placeholder-button") a
 // Drag'n'Drop input element
 const dragArea = document.querySelector(".drag-area") as HTMLDivElement;
 
-// Init
 /**
  * Current mode
  * @type {string}
  */
-let currentMode: string;
+// let currentMode: string;
+
+// Init
+ImageEditor.createLoader(mainContainer);
 
 // Event listeners
 
@@ -64,8 +67,11 @@ uploadInput.addEventListener("change", (e) => {
 });
 
 // Drag'n'Drop upload
-["dragenter", "dragover", "dragleave", "drop"].forEach((e) => {
-  dragArea.addEventListener(e, preventDefaults);
+["dragenter", "dragover", "dragleave", "drop"].forEach((eventType) => {
+  dragArea.addEventListener(eventType, (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
 });
 
 // Highlight/unhighlight area
@@ -108,113 +114,105 @@ function uploadFile(file: File): void {
     ImageEditor.reset(file)
   }
 
-  // Remove old event listener for keyboard shortcuts 
-  // document.removeEventListener('keydown', keyboardShortcuts);
-
-  // currentEditor = new ImageEditor(DOMContainers, file, isMobile);
-
-  initEvents();
-  activateMode("crop", true);
+  // initEvents();
+  // activateMode("crop", true);
 }
 
 /**
   * @property {Function} initEvents - Adds events on DOM elements of ImageEditor
   * @returns {void}
   */
-function initEvents() {
-  // Tools
-  const aspectRatioBtns = ImageEditor.getInstance().cropperControlsContainer
-    .querySelector(".aspect-ratio-buttons")
-    .querySelectorAll("button");
-  const rotateReflectBtns = ImageEditor.getInstance().cropperControlsContainer
-    .querySelector(".rotation-buttons")
-    .querySelectorAll("button");
+// function initEvents() {
+//   // Tools
+//   const aspectRatioBtns = ImageEditor.getInstance().cropperControlsContainer
+//     .querySelector(".aspect-ratio-buttons")
+//     .querySelectorAll("button");
+//   const rotateReflectBtns = ImageEditor.getInstance().cropperControlsContainer
+//     .querySelector(".rotation-buttons")
+//     .querySelectorAll("button");
 
-  const paintingBrush = ImageEditor.getInstance().brushModeBtn;
-  const eraserBrush = ImageEditor.getInstance().eraserModeBtn;
-  const blurBrush = ImageEditor.getInstance().blurModeBtn;
+//   const paintingBrush = ImageEditor.getInstance().brushModeBtn;
+//   const eraserBrush = ImageEditor.getInstance().eraserModeBtn;
+//   const blurBrush = ImageEditor.getInstance().blurModeBtn;
 
-  // Mode switching events
-  ImageEditor.getInstance().cropModeBtn.addEventListener("click", () => {
-    activateMode("crop");
-    removeToolActiveStates(aspectRatioBtns);
-  });
+//   // Mode switching events
+//   ImageEditor.getInstance().cropModeBtn.addEventListener("click", () => {
+//     activateMode("crop");
+//     removeToolActiveStates(aspectRatioBtns);
+//   });
 
-  ImageEditor.getInstance().paintModeBtn.addEventListener("click", () => {
-    activateMode("paint");
-    removeToolActiveStates(aspectRatioBtns);
-  });
+//   ImageEditor.getInstance().paintModeBtn.addEventListener("click", () => {
+//     activateMode("paint");
+//     removeToolActiveStates(aspectRatioBtns);
+//   });
 
-  ImageEditor.getInstance().filtersModeBtn.addEventListener("click", () => {
-    activateMode("filters");
-    removeToolActiveStates(aspectRatioBtns);
-  });
+//   ImageEditor.getInstance().filtersModeBtn.addEventListener("click", () => {
+//     activateMode("filters");
+//     removeToolActiveStates(aspectRatioBtns);
+//   });
 
-  ImageEditor.getInstance().rotationModeBtn.addEventListener("click", () => {
-    activateMode("rotation");
-    removeToolActiveStates(aspectRatioBtns);
-  });
+//   ImageEditor.getInstance().rotationModeBtn.addEventListener("click", () => {
+//     activateMode("rotation");
+//     removeToolActiveStates(aspectRatioBtns);
+//   });
 
-  ImageEditor.getInstance().applyPaintingCanvasBtn.addEventListener("click", () => {
-    activateMode("crop");
-  });
+//   ImageEditor.getInstance().applyPaintingCanvasBtn.addEventListener("click", () => {
+//     activateMode("crop");
+//   });
 
-  // Undo behaviour
-  ImageEditor.getInstance().cropperUndoBtn.addEventListener("click", () => {
-    removeToolActiveStates(aspectRatioBtns);
-  });
+//   // Undo behaviour
+//   ImageEditor.getInstance().cropperUndoBtn.addEventListener("click", () => {
+//     removeToolActiveStates(aspectRatioBtns);
+//   });
 
-  // Crop tools events
-  aspectRatioBtns.forEach((button) => {
-    button.addEventListener("click", (e) => {
-      const currentBtn = e.currentTarget;
+//   // Crop tools events
+//   aspectRatioBtns.forEach((button) => {
+//     button.addEventListener("click", (e) => {
+//       const currentBtn = e.currentTarget;
 
-      removeToolActiveStates(aspectRatioBtns);
-      if (currentBtn.id === "cropper-aspect-free-btn") {
-        if (!ImageEditor.getInstance().cropper.cropped) {
-          currentBtn.classList.toggle("active");
-        }
-      } else {
-        currentBtn.classList.add("active");
-      }
-    });
-  });
+//       removeToolActiveStates(aspectRatioBtns);
+//       if (currentBtn.id === "cropper-aspect-free-btn") {
+//         if (!ImageEditor.getInstance().cropper.cropped) {
+//           currentBtn.classList.toggle("active");
+//         }
+//       } else {
+//         currentBtn.classList.add("active");
+//       }
+//     });
+//   });
 
-  // Apply crop
-  ImageEditor.getInstance().cropperBtnApply.addEventListener("click", () => {
-    removeToolActiveStates(aspectRatioBtns);
-  });
+//   // Apply crop
+//   ImageEditor.getInstance().cropperBtnApply.addEventListener("click", () => {
+//     removeToolActiveStates(aspectRatioBtns);
+//   });
 
-  // Rotation/reflection buttons behaviour
-  rotateReflectBtns.forEach((button) => {
-    button.addEventListener("click", () => {
-      removeToolActiveStates(aspectRatioBtns);
-    });
-  });
+//   // Rotation/reflection buttons behaviour
+//   rotateReflectBtns.forEach((button) => {
+//     button.addEventListener("click", () => {
+//       removeToolActiveStates(aspectRatioBtns);
+//     });
+//   });
 
-  // Keyboard brush events
-  document.addEventListener('keydown', keyboardShortcuts)
+//   // Eraser tool
+//   eraserBrush.addEventListener("click", () => {
+//     eraserBrush.classList.add("active");
+//     paintingBrush.classList.remove("active");
+//     blurBrush.classList.remove("active");
+//   });
 
-  // Eraser tool
-  eraserBrush.addEventListener("click", () => {
-    eraserBrush.classList.add("active");
-    paintingBrush.classList.remove("active");
-    blurBrush.classList.remove("active");
-  });
+//   // Blur tool
+//   blurBrush.addEventListener("click", () => {
+//     eraserBrush.classList.remove("active");
+//     paintingBrush.classList.remove("active");
+//     blurBrush.classList.add("active");
+//   });
 
-  // Blur tool
-  blurBrush.addEventListener("click", () => {
-    eraserBrush.classList.remove("active");
-    paintingBrush.classList.remove("active");
-    blurBrush.classList.add("active");
-  });
+//   paintingBrush.addEventListener("click", () => {
+//     setPaintBrush();
+//   });
 
-  paintingBrush.addEventListener("click", () => {
-    setPaintBrush();
-  });
-
-  // addMicroAnimations();
-}
+//   // addMicroAnimations();
+// }
 
 
 /**
@@ -224,80 +222,69 @@ function initEvents() {
  * @param {boolean} newFile - if it is first initialization
  * @returns {void}
  */
-function activateMode(mode, newFile) {
+// function activateMode(mode, newFile) {
 
-  if (newFile) {
-    ImageEditor.getInstance().cropModeBtn.classList.add("active");
-  }
+//   if (newFile) {
+//     ImageEditor.getInstance().cropModeBtn.classList.add("active");
+//   }
 
-  if (currentMode === mode) return;
+//   if (currentMode === mode) return;
 
-  if (currentMode === "paint" && ImageEditor.getInstance().paintingCanvas) {
-    ImageEditor.getInstance().cropper.enable();
+//   if (currentMode === "paint" && ImageEditor.getInstance().paintingCanvas) {
+//     ImageEditor.getInstance().cropper.enable();
 
-    if (ImageEditor.getInstance().blurCanvas) {
-      ImageEditor.getInstance().clearBlurCanvas();
-    }
+//     if (ImageEditor.getInstance().blurCanvas) {
+//       ImageEditor.getInstance().clearBlurCanvas();
+//     }
 
-    ImageEditor.getInstance().paintingCanvas.remove();
-    ImageEditor.getInstance().paintingCanvas = undefined;
-    ImageEditor.getInstance().setZoombuttonsState("both-active");
-    ImageEditor.getInstance().setUndoBtn(false);
+//     ImageEditor.getInstance().paintingCanvas.remove();
+//     ImageEditor.getInstance().paintingCanvas = undefined;
+//     ImageEditor.getInstance().setZoombuttonsState("both-active");
+//     ImageEditor.getInstance().setUndoBtn(false);
 
-    if (!isMobile) {
-      ImageEditor.getInstance().initBrushCursor(undefined, false);
-    }
+//     if (!isMobile) {
+//       ImageEditor.getInstance().initBrushCursor(undefined, false);
+//     }
 
-  }
+//   }
 
-  if (currentMode === "filters") {
-    ImageEditor.getInstance().resetFilters();
-  }
+//   if (currentMode === "filters") {
+//     ImageEditor.getInstance().resetFilters();
+//   }
 
-  if (currentMode === "rotation") {
-    ImageEditor.getInstance().resetRotation();
-  }
+//   if (currentMode === "rotation") {
+//     ImageEditor.getInstance().resetRotation();
+//   }
 
-  // Set current mode to new
-  currentMode = mode;
+//   // Set current mode to new
+//   currentMode = mode;
 
-  // Activate proper panel in DOM
-  toolContainers.forEach((container) => {
-    container.classList.add("hide");
-  });
-  document.querySelector(`.${mode}-controls`).classList.remove("hide");
+//   // Activate proper panel in DOM
+//   toolContainers.forEach((container) => {
+//     container.classList.add("hide");
+//   });
+//   document.querySelector(`.${mode}-controls`).classList.remove("hide");
 
-  // Update icons in cp
-  ImageEditor.getInstance().cpContainer
-    .querySelectorAll(".cp-toolbox button")
-    .forEach((button) => {
-      button.classList.remove("active");
-      if (button.id === `${mode}-mode`) {
-        button.classList.add("active");
-      }
-    });
+//   // Update icons in cp
+//   ImageEditor.getInstance().cpContainer
+//     .querySelectorAll(".cp-toolbox button")
+//     .forEach((button) => {
+//       button.classList.remove("active");
+//       if (button.id === `${mode}-mode`) {
+//         button.classList.add("active");
+//       }
+//     });
 
-  if (mode === "paint") {
-    ImageEditor.getInstance().cropper.clear();
-    ImageEditor.getInstance().cropper.disable();
-    ImageEditor.getInstance().createPaintingCanvas();
-    ImageEditor.getInstance().setZoombuttonsState("paint");
-    ImageEditor.getInstance().setUndoBtn(true);
+//   if (mode === "paint") {
+//     ImageEditor.getInstance().cropper.clear();
+//     ImageEditor.getInstance().cropper.disable();
+//     ImageEditor.getInstance().createPaintingCanvas();
+//     ImageEditor.getInstance().setZoombuttonsState("paint");
+//     ImageEditor.getInstance().setUndoBtn(true);
 
-    setPaintBrush();
-  }
-}
-
-/**
- * 
- * @property {Function} preventDefaults - Prevents default for some events
- * @param {DragEvent} e - event object that cames from drag and drop events
- * @returns {void}
- */
-function preventDefaults(e) {
-  e.preventDefault();
-  e.stopPropagation();
-}
+//     setPaintBrush();
+//   }
+// }
 
 /**
  * 
@@ -305,20 +292,20 @@ function preventDefaults(e) {
  * @param {HTMLCollection} elements
  * @returns {void}
  */
-function removeToolActiveStates(elements) {
-  elements.forEach((btn) => btn.classList.remove("active"));
-}
+// function removeToolActiveStates(elements) {
+//   elements.forEach((btn) => btn.classList.remove("active"));
+// }
 
 /**
  * 
  * @property {Function} setPaintBrush - Highlight DOM elements of paint mode
  * @returns {void}
  */
-function setPaintBrush() {
-  ImageEditor.getInstance().brushModeBtn.classList.add("active");
-  ImageEditor.getInstance().eraserModeBtn.classList.remove("active");
-  ImageEditor.getInstance().blurModeBtn.classList.remove("active");
-}
+// function setPaintBrush() {
+//   ImageEditor.getInstance().brushModeBtn.classList.add("active");
+//   ImageEditor.getInstance().eraserModeBtn.classList.remove("active");
+//   ImageEditor.getInstance().blurModeBtn.classList.remove("active");
+// }
 
 /**
  * 
@@ -736,26 +723,6 @@ function addMicroAnimations() {
   );
 }
 
-/**
- * @property {Function} keyboardShortcuts - increase/decrease paint brush size by pressing '[' ']' buttons on keyboard
- * @param {KeyboardEvent} e - event object, that comes from listener that fires on keyboard input
- * @returns {void}
- */
-function keyboardShortcuts(e) {
-  console.log(e);
-  if (currentEditor.paintingCanvas) {
-    if (e.keyCode == 219) {
-      currentEditor.changeBrushSize('decrease');
-    } else if (e.keyCode == 221) {
-      currentEditor.changeBrushSize('increase');
-    }
-
-    if (currentEditor.brushCursor) {
-      currentEditor.brushCursor.style.width = `${currentEditor.brushSize * 2}px`;
-      currentEditor.brushCursor.style.height = `${currentEditor.brushSize * 2}px`;
-    }
-  }
-}
 
 // Placeholder btn
 addBasicMicroAnimation(
