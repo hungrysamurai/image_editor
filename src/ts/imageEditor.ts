@@ -1,4 +1,4 @@
-import Cropper from 'cropperjs';
+import Cropper from "cropperjs";
 
 import {
   EditorMode,
@@ -10,45 +10,44 @@ import {
   ZoomButtonsState,
   BrushSizeAction,
   BrushDOMElementsObject,
-  BrushMode
-} from './types/imageEditor.types';
+  BrushMode,
+} from "./types/imageEditor.types";
 
 import {
   createDOMElement,
   addKeyboardShortcuts,
-  setActivePaintModeDOM
-} from './utils';
+  setActivePaintModeDOM,
+  removeToolActiveStates,
+} from "./utils";
+
+import { drawLine, drawCircle } from "./paintUtils";
 
 import {
   createCropperControls,
   createPaintingControls,
   createFiltersControls,
-  createRotationControls
-} from './DOMelementsCreators';
+  createRotationControls,
+} from "./DOMelementsCreators";
 
-import {
-  initImageDOM,
-  initCPDOM,
-} from './DOMInitializers';
+import { initImageDOM, initCPDOM } from "./DOMInitializers";
 
 import {
   addCropperEvents,
   addPaintingEvents,
   addFiltersEvents,
-  addRotationEvents
-} from './eventListeners_toolContainer';
+  addRotationEvents,
+} from "./eventListeners_toolContainer";
 
-import {
-  addCPEvents
-} from './eventListeners_controlPanel';
+import { addCPEvents } from "./eventListeners_controlPanel";
 
-import { canvasRGBA } from 'stackblur-canvas'
+import { canvasRGBA } from "stackblur-canvas";
 
 /**
  * SVG icons
  * @type {Object}
  */
 import icons from "../assets/icons";
+import { addMicroAnimations } from "./animationUtils";
 
 /**
  * Class that generates ImageEditor and inits it in DOM
@@ -63,23 +62,22 @@ export default class ImageEditor {
   static editorMode: EditorMode = EditorMode.Crop;
 
   /**
-* @property {Function} createLoader - Create loader element in DOM
-*/
+   * @property {Function} createLoader - Create loader element in DOM
+   */
   static createLoader(container: HTMLDivElement): void {
     ImageEditor.loadingScreen = createDOMElement({
-      elementName: 'div',
-      className: 'loading-screen hide',
-      content: icons.loadingSpinner
+      elementName: "div",
+      className: "loading-screen hide",
+      content: icons.loadingSpinner,
     });
     container.insertAdjacentElement("beforebegin", ImageEditor.loadingScreen);
   }
 
-
   /**
-  * @property {Function} loading - show/hide loader
-  * @param {string} action
-  * @param {boolean} initial - first run - true
-  */
+   * @property {Function} loading - show/hide loader
+   * @param {string} action
+   * @param {boolean} initial - first run - true
+   */
   static loading(action: LoadingState, initial?: boolean): void {
     if (action === LoadingState.Hide) {
       ImageEditor.loadingScreen.classList.add(LoadingState.Hide);
@@ -96,10 +94,16 @@ export default class ImageEditor {
     }
   }
 
-  static create(DOMContainers: HTMLDivElement[], imageFile: File, isMobile: boolean) {
+  static create(
+    DOMContainers: HTMLDivElement[],
+    imageFile: File,
+    isMobile: boolean
+  ) {
     ImageEditor.instanceRef = new ImageEditor(
-      DOMContainers, imageFile, isMobile
-    )
+      DOMContainers,
+      imageFile,
+      isMobile
+    );
   }
 
   static reset(imageFile: File) {
@@ -111,6 +115,10 @@ export default class ImageEditor {
     cropper.clear();
     cropper.setCanvasData(cropper.imageCenter);
 
+    // Default mode - crop
+    ImageEditor.instanceRef.activateEditorMode(EditorMode.Crop, true);
+    removeToolActiveStates(ImageEditor.instanceRef.aspectRatioBtns);
+
     // Replace image
     cropper.replace(URL.createObjectURL(imageFile));
 
@@ -118,7 +126,7 @@ export default class ImageEditor {
     ImageEditor.instanceRef.#cropperHistory.length = 0;
     ImageEditor.instanceRef.initialCanvas = null;
 
-    ImageEditor.instanceRef.activateEditorMode(EditorMode.Crop, true);
+    ImageEditor.instanceRef.setImageFormat(imageFile.type as ImageMimeType);
   }
 
   static loadingScreen: HTMLDivElement;
@@ -183,6 +191,8 @@ export default class ImageEditor {
   cropperBtnReflectY!: HTMLButtonElement;
   cropperBtnApply!: HTMLButtonElement;
 
+  aspectRatioBtns: NodeListOf<HTMLButtonElement>;
+
   paintModeBtn!: HTMLButtonElement;
 
   colorPicker!: HTMLInputElement;
@@ -217,19 +227,19 @@ export default class ImageEditor {
   // Some global variables for painting
 
   /**
-        * @property {string} this.brushColor - color of painting brush in HEX format
-        */
+   * @property {string} this.brushColor - color of painting brush in HEX format
+   */
   brushColor!: string;
 
   /**
-  * @property {number} this.brushSize - size of painting brush
-  */
-  brushSize!: number
+   * @property {number} this.brushSize - size of painting brush
+   */
+  brushSize!: number;
 
   /**
-  * @property {boolean} this.brushIsPressed
-  */
-  brushIsPressed!: boolean
+   * @property {boolean} this.brushIsPressed
+   */
+  brushIsPressed!: boolean;
 
   /**
    * @property {boolean} this.brushIsEraser - is brush in eraser mode
@@ -237,44 +247,43 @@ export default class ImageEditor {
   brushIsEraser!: boolean;
 
   /**
-* @property {Cropper} cropper - cropper instance
-*/
-  cropper: Cropper
+   * @property {Cropper} cropper - cropper instance
+   */
+  cropper: Cropper;
 
   /**
- * @property {Array} #cropperHistory - array of previous canvas elements
- */
+   * @property {Array} #cropperHistory - array of previous canvas elements
+   */
   #cropperHistory: HTMLCanvasElement[] = [];
 
   /**
-    * @property {number} #croppersCounter - counts how many times new Cropper object was created. 0 by default, 1 after first initialization
-    */
+   * @property {number} #croppersCounter - counts how many times new Cropper object was created. 0 by default, 1 after first initialization
+   */
   #croppersCounter = 0;
 
   /**
-    * @property {HTMLElement} croppedBox - img element inside cropper box
-    */
+   * @property {HTMLElement} croppedBox - img element inside cropper box
+   */
   croppedBox!: HTMLImageElement;
 
   /**
-    * @property {HTMLElement} previewImage - img element in DOM
-    */
+   * @property {HTMLElement} previewImage - img element in DOM
+   */
   previewImage!: HTMLImageElement;
 
-
   /**
-  * @property {HTMLElement} paintingCanvas - canvas element for painting
-  */
+   * @property {HTMLElement} paintingCanvas - canvas element for painting
+   */
   paintingCanvas!: HTMLCanvasElement | undefined;
 
   /**
-  * @property {HTMLElement} paintingCanvas - canvas element for painting with blur brush
-  */
+   * @property {HTMLElement} paintingCanvas - canvas element for painting with blur brush
+   */
   blurCanvas!: HTMLCanvasElement | undefined;
 
   /**
-  * @property {HTMLElement} offScreenCanvas - off screen temp canvas element that holds all blur-brush strokes
-*/
+   * @property {HTMLElement} offScreenCanvas - off screen temp canvas element that holds all blur-brush strokes
+   */
   offScreenCanvas!: HTMLCanvasElement | undefined;
 
   /**
@@ -294,8 +303,11 @@ export default class ImageEditor {
    * @param {boolean} isMobile - true if mobile
    * @this ImageEditor
    */
-  private constructor(DOMContainers: HTMLDivElement[], imageFile: File, isMobile: boolean) {
-
+  private constructor(
+    DOMContainers: HTMLDivElement[],
+    imageFile: File,
+    isMobile: boolean
+  ) {
     ImageEditor.loading(LoadingState.Show, true);
 
     const [cpContainer, mainContainer, toolContainer] = DOMContainers;
@@ -305,15 +317,19 @@ export default class ImageEditor {
     this.toolContainer = toolContainer;
 
     // Get individual tool container
-    this.cropperControlsContainer =
-      this.toolContainer.querySelector(".crop-controls") as HTMLDivElement;
-    this.paintingControlsContainer =
-      this.toolContainer.querySelector(".paint-controls") as HTMLDivElement;
-    this.filterControlsContainer =
-      this.toolContainer.querySelector(".filters-controls") as HTMLDivElement;
+    this.cropperControlsContainer = this.toolContainer.querySelector(
+      ".crop-controls"
+    ) as HTMLDivElement;
+    this.paintingControlsContainer = this.toolContainer.querySelector(
+      ".paint-controls"
+    ) as HTMLDivElement;
+    this.filterControlsContainer = this.toolContainer.querySelector(
+      ".filters-controls"
+    ) as HTMLDivElement;
     this.filtersSliders = [];
-    this.rotationControlsContainer =
-      this.toolContainer.querySelector(".rotation-controls") as HTMLDivElement;
+    this.rotationControlsContainer = this.toolContainer.querySelector(
+      ".rotation-controls"
+    ) as HTMLDivElement;
 
     // Group tool containers to array
     this.toolContainers = [
@@ -321,7 +337,7 @@ export default class ImageEditor {
       this.paintingControlsContainer,
       this.filterControlsContainer,
       this.rotationControlsContainer,
-    ]
+    ];
 
     this.isMobile = isMobile;
 
@@ -352,7 +368,9 @@ export default class ImageEditor {
           this.previewImage = this.cropper.image;
           this.applyFilters(this.previewImage);
 
-          this.croppedBox = this.cropper.viewBox.querySelector("img") as HTMLImageElement;
+          this.croppedBox = this.cropper.viewBox.querySelector(
+            "img"
+          ) as HTMLImageElement;
           this.applyFilters(this.croppedBox);
 
           // Capture initial canvas data width to disable moving if fully zoomed out
@@ -404,9 +422,8 @@ export default class ImageEditor {
             this.cropper.setDragMode("move");
             this.setZoombuttonsState(ZoomButtonsState.Active);
           } else {
-
             this.cropper.setCropBoxData({
-              height: currentCanvasData.height
+              height: currentCanvasData.height,
             });
 
             this.cropper.setDragMode("none");
@@ -416,9 +433,7 @@ export default class ImageEditor {
 
             // Fix horizontal shift of image
             let topMargin =
-              (this.mainContainer.clientHeight -
-                currentCanvasData.height) /
-              2;
+              (this.mainContainer.clientHeight - currentCanvasData.height) / 2;
             this.cropper.setCanvasData({
               top: topMargin,
             });
@@ -428,6 +443,13 @@ export default class ImageEditor {
         },
       }
     );
+
+    // Aspect Ratio buttons as NodeList
+    this.aspectRatioBtns = (
+      this.cropperControlsContainer.querySelector(
+        ".aspect-ratio-buttons"
+      ) as HTMLDivElement
+    ).querySelectorAll("button");
 
     initCPDOM(this);
 
@@ -439,24 +461,23 @@ export default class ImageEditor {
 
     this.setImageFormat(imageFile.type as ImageMimeType);
 
-
     this.brushToolsObject = {
       [BrushMode.Paint]: this.brushModeBtn,
       [BrushMode.Blur]: this.blurModeBtn,
-      [BrushMode.Eraser]: this.eraserModeBtn
-    }
+      [BrushMode.Eraser]: this.eraserModeBtn,
+    };
 
     addCPEvents(this);
     this.activateEditorMode(EditorMode.Crop, true);
+    addMicroAnimations(this);
   }
 
-
   /**
- * 
- * @property {Function} activateEditorMode - Activate mode. Initially - crop mode. 
- * @param {string} mode - new mode of ImageEditor
- * @param {boolean} isNewImage - if it is first initialization
- */
+   *
+   * @property {Function} activateEditorMode - Activate mode. Initially - crop mode.
+   * @param {string} mode - new mode of ImageEditor
+   * @param {boolean} isNewImage - if it is first initialization
+   */
   activateEditorMode(mode: EditorMode, isNewImage?: boolean): void {
     if (isNewImage) {
       this.cropModeBtn.classList.add("active");
@@ -479,7 +500,6 @@ export default class ImageEditor {
       if (!this.isMobile) {
         this.initBrushCursor(undefined, false);
       }
-
     }
 
     if (ImageEditor.editorMode === EditorMode.Filters) {
@@ -498,7 +518,9 @@ export default class ImageEditor {
       container.classList.add("hide");
     });
 
-    (this.toolContainer.querySelector(`.${mode}-controls`) as HTMLDivElement).classList.remove("hide");
+    (
+      this.toolContainer.querySelector(`.${mode}-controls`) as HTMLDivElement
+    ).classList.remove("hide");
 
     // Update icons in cp
     this.cpContainer
@@ -542,8 +564,8 @@ export default class ImageEditor {
   }
 
   /**
- * @property {Function} applyRotation - Apply rotation and apply change
- */
+   * @property {Function} applyRotation - Apply rotation and apply change
+   */
   applyRotation(): void {
     if (!this.cropper.cropped) {
       this.cropper.crop();
@@ -558,9 +580,9 @@ export default class ImageEditor {
    * @property {Function} resetRotation - reset rotation to 0
    */
   resetRotation(): void {
-    this.imageRotationValue.textContent = '0';
+    this.imageRotationValue.textContent = "0";
     this.cropper.rotateTo(0);
-    this.imageRotationSlider.value = '0';
+    this.imageRotationSlider.value = "0";
     this.cropper.clear();
   }
 
@@ -570,14 +592,12 @@ export default class ImageEditor {
    * @returns {string} - string with filters properties to apply on canvas element
    */
   applyFilters(element?: HTMLImageElement): string {
-
     if (element) {
       element.style.filter = `brightness(${this.filtersState.brightness}%)contrast(${this.filtersState.contrast}%)saturate(${this.filtersState.saturation}%)invert(${this.filtersState.inversion}%) blur(${this.filtersState.blur}px)hue-rotate(${this.filtersState.hue}deg)`;
     }
 
     return `brightness(${this.filtersState.brightness}%)contrast(${this.filtersState.contrast}%)saturate(${this.filtersState.saturation}%)invert(${this.filtersState.inversion}%) hue-rotate(${this.filtersState.hue}deg)`;
   }
-
 
   /**
    * @property {Function} resetFilters - resets filtersState object values to initial, reset filters styles of this.previewImage and this.croppedBox
@@ -589,14 +609,14 @@ export default class ImageEditor {
         filterRange.id === Filters.saturation ||
         filterRange.id === Filters.contrast
       ) {
-        filterRange.value = '100';
+        filterRange.value = "100";
         this.filtersState[filterRange.id] = 100;
       } else if (
         filterRange.id === Filters.inversion ||
         filterRange.id === Filters.blur ||
         filterRange.id === Filters.hue
       ) {
-        filterRange.value = '0';
+        filterRange.value = "0";
         this.filtersState[filterRange.id] = 0;
       }
     });
@@ -605,21 +625,21 @@ export default class ImageEditor {
   }
 
   /**
-    * @property {Function} setUndoBtn - disable global Undo button in painting mode and when only 1 (initial) canvas in #cropperHistory 
+   * @property {Function} setUndoBtn - disable global Undo button in painting mode and when only 1 (initial) canvas in #cropperHistory
    * @param {boolean} paintMode - if true - paint mode is active
    */
   setUndoBtn(paintMode?: boolean): void {
     if (this.#cropperHistory.length === 1 || paintMode) {
       this.cropperUndoBtn.disabled = true;
-      this.cropperUndoBtn.style.opacity = '0.5';
+      this.cropperUndoBtn.style.opacity = "0.5";
     } else {
       this.cropperUndoBtn.disabled = false;
-      this.cropperUndoBtn.style.opacity = '1';
+      this.cropperUndoBtn.style.opacity = "1";
     }
   }
 
   /**
-    * @property {Function} saveCanvas - save canvas element to #cropperHistory array
+   * @property {Function} saveCanvas - save canvas element to #cropperHistory array
    * @param {HTMLElement} canvas - canvas element
    */
   saveCanvas(canvas: HTMLCanvasElement): void {
@@ -639,11 +659,10 @@ export default class ImageEditor {
     return previous;
   }
 
-
   /**
-    * @property {Function} canvasReplace - replace current canvas with provided by using .toBlob method
-    * @param {HTMLCanvasElement} canvas - canvas element 
-    */
+   * @property {Function} canvasReplace - replace current canvas with provided by using .toBlob method
+   * @param {HTMLCanvasElement} canvas - canvas element
+   */
   canvasReplace(canvas: HTMLCanvasElement) {
     canvas.toBlob(
       (blob) => {
@@ -729,13 +748,12 @@ export default class ImageEditor {
 
   /**
    * @property {Function} setImageFormat - sets format and quality of current image
-   * @param {string} type - jpeg/png/webp 
+   * @param {string} type - jpeg/png/webp
    */
   setImageFormat(type: ImageMimeType): void {
     let index;
 
     this.#imageFormats.forEach((format, i) => {
-
       if (format[0] === type) {
         index = i;
       }
@@ -764,13 +782,14 @@ export default class ImageEditor {
       this.#imageFormats[this.currentImageFormatIndex][2];
   }
 
-
   /**
    * @property {Function} downloadImage - download current canvas as image with current format & filters
    */
   downloadImage(): void {
     let canvas = this.cropper.getCroppedCanvas();
-    const ctx = canvas.getContext("2d", { willReadFrequently: true }) as CanvasRenderingContext2D;
+    const ctx = canvas.getContext("2d", {
+      willReadFrequently: true,
+    }) as CanvasRenderingContext2D;
 
     ctx.filter = this.applyFilters();
 
@@ -798,8 +817,8 @@ export default class ImageEditor {
   }
 
   /**
- * @property {Function} createPaintingCanvas - create new painting canvas element, set it in front of image and add event listeners to it
- */
+   * @property {Function} createPaintingCanvas - create new painting canvas element, set it in front of image and add event listeners to it
+   */
   createPaintingCanvas(): void {
     // Create canvas element
     let paintingCanvas = document.createElement("canvas");
@@ -811,7 +830,7 @@ export default class ImageEditor {
     paintingCanvas.style.position = "absolute";
     paintingCanvas.style.left = `${this.cropper.getCanvasData().left}px`;
     paintingCanvas.style.top = `${this.cropper.getCanvasData().top}px`;
-    paintingCanvas.style.zIndex = '1';
+    paintingCanvas.style.zIndex = "1";
     paintingCanvas.style.overflow = "hidden";
 
     paintingCanvas.height = this.previewImage.height;
@@ -876,8 +895,16 @@ export default class ImageEditor {
 
         const x2 = e.offsetX;
         const y2 = e.offsetY;
-        this.drawCircle(ctx, this.brushColor, this.brushSize, x2, y2);
-        this.drawLine(ctx, this.brushColor, this.brushSize, x as number, y as number, x2, y2);
+        drawCircle(ctx, this.brushColor, this.brushSize, x2, y2);
+        drawLine(
+          ctx,
+          this.brushColor,
+          this.brushSize,
+          x as number,
+          y as number,
+          x2,
+          y2
+        );
 
         x = x2;
         y = y2;
@@ -899,8 +926,16 @@ export default class ImageEditor {
 
         const x2 = tx;
         const y2 = ty;
-        this.drawCircle(ctx, this.brushColor, this.brushSize, x2, y2);
-        this.drawLine(ctx, this.brushColor, this.brushSize, x as number, y as number, x2, y2);
+        drawCircle(ctx, this.brushColor, this.brushSize, x2, y2);
+        drawLine(
+          ctx,
+          this.brushColor,
+          this.brushSize,
+          x as number,
+          y as number,
+          x2,
+          y2
+        );
 
         x = x2;
         y = y2;
@@ -925,7 +960,9 @@ export default class ImageEditor {
     this.blurCanvas = blurCanvas;
 
     let offScreenCanvas = document.createElement("canvas");
-    let offScreenCtx = offScreenCanvas.getContext("2d") as CanvasRenderingContext2D;
+    let offScreenCtx = offScreenCanvas.getContext(
+      "2d"
+    ) as CanvasRenderingContext2D;
 
     this.offScreenCanvas = offScreenCanvas;
 
@@ -933,7 +970,7 @@ export default class ImageEditor {
     blurCanvas.style.position = "absolute";
     blurCanvas.style.left = `${this.cropper.getCanvasData().left}px`;
     blurCanvas.style.top = `${this.cropper.getCanvasData().top}px`;
-    blurCanvas.style.zIndex = '3';
+    blurCanvas.style.zIndex = "3";
     blurCanvas.style.overflow = "hidden";
 
     blurCanvas.height = this.previewImage.height;
@@ -960,11 +997,19 @@ export default class ImageEditor {
       merged.height = baseCanvas.height;
 
       mergedCtx.drawImage(baseCanvas, 0, 0);
-      mergedCtx.drawImage(this.paintingCanvas, 0, 0, merged.width, merged.height);
+      mergedCtx.drawImage(
+        this.paintingCanvas,
+        0,
+        0,
+        merged.width,
+        merged.height
+      );
 
       // Save painting progress
       this.drawBackCanvas = document.createElement("canvas");
-      const drawBackCtx = this.drawBackCanvas.getContext("2d") as CanvasRenderingContext2D;
+      const drawBackCtx = this.drawBackCanvas.getContext(
+        "2d"
+      ) as CanvasRenderingContext2D;
       this.drawBackCanvas.width = this.paintingCanvas.width;
       this.drawBackCanvas.height = this.paintingCanvas.height;
       drawBackCtx.drawImage(
@@ -975,7 +1020,6 @@ export default class ImageEditor {
         this.drawBackCanvas.height
       );
     }
-
 
     //  Draw merged canvas on blur context
     blurCtx.drawImage(merged, 0, 0, blurCanvas.width, blurCanvas.height);
@@ -1016,19 +1060,11 @@ export default class ImageEditor {
       const x2 = e.offsetX;
       const y2 = e.offsetY;
 
-      this.drawCircle(blurCtx, "rgba(0, 0, 0, 0.05)", this.brushSize, x2, y2);
-      this.drawLine(
-        blurCtx,
-        "rgba(0, 0, 0, 0.05)",
-        this.brushSize,
-        x,
-        y,
-        x2,
-        y2
-      );
+      drawCircle(blurCtx, "rgba(0, 0, 0, 0.05)", this.brushSize, x2, y2);
+      drawLine(blurCtx, "rgba(0, 0, 0, 0.05)", this.brushSize, x, y, x2, y2);
 
-      this.drawCircle(offScreenCtx, undefined, this.brushSize, x, y);
-      this.drawLine(offScreenCtx, undefined, this.brushSize, x, y, x2, y2);
+      drawCircle(offScreenCtx, undefined, this.brushSize, x, y);
+      drawLine(offScreenCtx, undefined, this.brushSize, x, y, x2, y2);
 
       x = x2;
       y = y2;
@@ -1046,19 +1082,11 @@ export default class ImageEditor {
       const x2 = tx;
       const y2 = ty;
 
-      this.drawCircle(blurCtx, "rgba(0, 0, 0, 0.05)", this.brushSize, x2, y2);
-      this.drawLine(
-        blurCtx,
-        "rgba(0, 0, 0, 0.05)",
-        this.brushSize,
-        x,
-        y,
-        x2,
-        y2
-      );
+      drawCircle(blurCtx, "rgba(0, 0, 0, 0.05)", this.brushSize, x2, y2);
+      drawLine(blurCtx, "rgba(0, 0, 0, 0.05)", this.brushSize, x, y, x2, y2);
 
-      this.drawCircle(offScreenCtx, undefined, this.brushSize, x, y);
-      this.drawLine(offScreenCtx, undefined, this.brushSize, x, y, x2, y2);
+      drawCircle(offScreenCtx, undefined, this.brushSize, x, y);
+      drawLine(offScreenCtx, undefined, this.brushSize, x, y, x2, y2);
 
       x = x2;
       y = y2;
@@ -1116,13 +1144,15 @@ export default class ImageEditor {
   }
 
   /**
-  * @property {Function} applyBlurCanvas - merge original painting canvas with 'blur-brushed' offscreen canvas
-  */
+   * @property {Function} applyBlurCanvas - merge original painting canvas with 'blur-brushed' offscreen canvas
+   */
   applyBlurCanvas(): void {
     if (!this.blurCanvas) return;
 
     if (this.paintingCanvas && this.drawBackCanvas && this.offScreenCanvas) {
-      let paintingCanvasCtx = this.paintingCanvas.getContext("2d") as CanvasRenderingContext2D;
+      let paintingCanvasCtx = this.paintingCanvas.getContext(
+        "2d"
+      ) as CanvasRenderingContext2D;
 
       paintingCanvasCtx.drawImage(
         this.drawBackCanvas,
@@ -1142,12 +1172,11 @@ export default class ImageEditor {
 
       this.clearBlurCanvas();
     }
-
   }
 
   /**
-* @property {Function} clearBlurCanvas - Removes blur canvas & offscreen canvas
-*/
+   * @property {Function} clearBlurCanvas - Removes blur canvas & offscreen canvas
+   */
   clearBlurCanvas(): void {
     this.blurCanvas?.remove();
     this.blurCanvas = undefined;
@@ -1159,74 +1188,17 @@ export default class ImageEditor {
     this.drawBackCanvas = undefined;
   }
 
-  // Drawing methods
-
   /**
-  * @property {Function} drawCircle - draw circle on canvas
-  * @param {CanvasRenderingContex2d} ctx - context to draw on
-  * @param {string} color - HEX value of current brush color
-  * @param {number} size - size of circle to draw
-  * @param {number} x - x-coordinates of circle 
-  * @param {number} y - y-coordinates of circle 
-  */
-  drawCircle(
-    ctx: CanvasRenderingContext2D,
-    color: string | undefined,
-    size: number,
-    x: number,
-    y: number
-  ): void {
-
-    ctx.beginPath();
-    ctx.arc(x, y, size, 0, Math.PI * 2);
-    if (color) {
-      ctx.fillStyle = color;
-    }
-    ctx.closePath();
-    ctx.fill();
-
-  }
-
-  /**
-  * @property {Function} drawLine - draw line between two positions on canvas
-  * @param {CanvasRenderingContex2d} ctx - context to draw on
-  * @param {string} color - HEX value of current brush color
-  * @param {number} size - size of circle to draw
-  * @param {number} x1 - x-coordinates of start
-  * @param {number} y1 - y-coordinates of start 
-  * @param {number} x2 - x-coordinates of end
-  * @param {number} y2 - y-coordinates of end 
-  */
-  drawLine(
-    ctx: CanvasRenderingContext2D,
-    color: string | undefined,
-    size: number,
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number
-  ): void {
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    if (color) {
-      ctx.strokeStyle = color;
-    }
-    ctx.lineWidth = size * 2;
-    ctx.stroke();
-  }
-
-  /**
- * @property {Function} initBrushCursor - on desktop init brush circle cursor instead of regular arrow
- * @param {HTMLElement} canvas - current painting canvas
- * @param {boolean} state - init or remove custom cursor
- */
+   * @property {Function} initBrushCursor - on desktop init brush circle cursor instead of regular arrow
+   * @param {HTMLElement} canvas - current painting canvas
+   * @param {boolean} state - init or remove custom cursor
+   */
   initBrushCursor(canvas: HTMLCanvasElement | undefined, state: boolean): void {
     if (state && canvas) {
       canvas.addEventListener("mouseenter", () => {
         this.brushCursor = createDOMElement({
-          elementName: 'div',
-          className: 'paint-brush-cursor'
+          elementName: "div",
+          className: "paint-brush-cursor",
         });
 
         this.brushCursor.style.width = `${this.brushSize * 2}px`;
@@ -1259,8 +1231,8 @@ export default class ImageEditor {
   }
 
   /**
-    * @property {Function} applyPaintingCanvas - Save painting canvas and merge it with base canvas
-    */
+   * @property {Function} applyPaintingCanvas - Save painting canvas and merge it with base canvas
+   */
   applyPaintingCanvas(): void {
     ImageEditor.loading(LoadingState.Show);
     this.applyBlurCanvas();
@@ -1294,18 +1266,18 @@ export default class ImageEditor {
   }
 
   /**
-  * @property {Function} setZoombuttonsState - enable/disable zoom buttons
-  * @param {string} state
-  */
+   * @property {Function} setZoombuttonsState - enable/disable zoom buttons
+   * @param {string} state
+   */
   setZoombuttonsState(state: ZoomButtonsState) {
     if (state === ZoomButtonsState.ZoomOut) {
-      this.cropperZoomOutBtn.style.opacity = '0.5';
+      this.cropperZoomOutBtn.style.opacity = "0.5";
     } else if (state === ZoomButtonsState.Paint) {
-      this.cropperZoomOutBtn.style.opacity = '0.5';
-      this.cropperZoomInBtn.style.opacity = '0.5';
+      this.cropperZoomOutBtn.style.opacity = "0.5";
+      this.cropperZoomInBtn.style.opacity = "0.5";
     } else if (state === ZoomButtonsState.Active) {
-      this.cropperZoomOutBtn.style.opacity = '1';
-      this.cropperZoomInBtn.style.opacity = '1';
+      this.cropperZoomOutBtn.style.opacity = "1";
+      this.cropperZoomInBtn.style.opacity = "1";
     }
   }
 }

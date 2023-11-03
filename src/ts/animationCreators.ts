@@ -1,13 +1,17 @@
 import { gsap } from "gsap";
+import { AnimationCallback } from "./types/types";
 
 /**
  * @property {Function} animateElTopBottom - animate element by moving on Y axis
- * @param {HTMLElement} el - DOM element to animate
+ * @param {Element} el - DOM element to animate
  * @param {number} startPos 
  * @param {number} endPos 
- * @returns {void}
  */
-const animateElTopBottom = (el, startPos, endPos) => {
+const animateElTopBottom: AnimationCallback = (
+  el: Element,
+  startPos: number,
+  endPos: number
+): void => {
   gsap.fromTo(
     el,
     { y: startPos },
@@ -21,12 +25,15 @@ const animateElTopBottom = (el, startPos, endPos) => {
 
 /**
  * @property {Function} animateElLeftRight - animate element by moving on X axis
- * @param {HTMLElement} el - DOM element to animate
+ * @param {Element} el - DOM element to animate
  * @param {number} startPos 
  * @param {number} endPos 
- * @returns {void}
  */
-const animateElLeftRight = (el, startPos, endPos) => {
+const animateElLeftRight: AnimationCallback = (
+  el: Element,
+  startPos: number,
+  endPos: number
+): void => {
   gsap.fromTo(
     el,
     { x: startPos },
@@ -41,22 +48,21 @@ const animateElLeftRight = (el, startPos, endPos) => {
 
 /**
  * @property {Function} animateElZoom - animate element by zooming it in/out
- * @param {HTMLElement} el - DOM element to animate
+ * @param {Element} el - DOM element to animate
  * @param {number} startRatio 
  * @param {number} endRatio
  * @param {number} easeRatio
  * @param {number} opacityStart - initial opacity
  * @param {number} opacityEnd - target opacity
- * @returns {void}
  */
-const animateElZoom = (
-  el,
-  startRatio,
-  endRatio,
-  easeRatio = 0.4,
-  opacityStart = 1,
-  opacityEnd = 1
-) => {
+const animateElZoom: AnimationCallback = (
+  el: Element,
+  startRatio: number,
+  endRatio: number,
+  easeRatio: number = 0.4,
+  opacityStart: number = 1,
+  opacityEnd: number = 1
+): void => {
   gsap.fromTo(
     el,
     {
@@ -74,15 +80,20 @@ const animateElZoom = (
   );
 };
 
+
 /**
  * @property {Function} animateElRotation - animate element by rotating
- * @param {HTMLElement} el - DOM element to animate
+ * @param {Element} el - DOM element to animate
  * @param {number} startPos
  * @param {number} endPos
  * @param {number} easeRatio
- * @returns {void}
  */
-const animateElRotation = (el, startPos, endPos, easeRatio = 0.4) => {
+const animateElRotation: AnimationCallback = (
+  el: Element,
+  startPos: number,
+  endPos: number,
+  easeRatio: number = 0.4
+): void => {
   gsap.fromTo(
     el,
     { rotation: startPos },
@@ -94,12 +105,23 @@ const animateElRotation = (el, startPos, endPos, easeRatio = 0.4) => {
   );
 };
 
-const animateElFade = (el, start, end) => {
+
+/**
+ * @property {Function} animateElFade - animate simple fade
+ * @param {Element} el - DOM element to animate
+ * @param {number} startPos
+ * @param {number} endPos
+ */
+const animateElFade: AnimationCallback = (
+  el: Element,
+  startPos: number,
+  endPos: number
+): void => {
   gsap.fromTo(
     el,
-    { opacity: start },
+    { opacity: startPos },
     {
-      opacity: end,
+      opacity: endPos,
       duration: 0.5,
       ease: `Expo.easeOut`,
     }

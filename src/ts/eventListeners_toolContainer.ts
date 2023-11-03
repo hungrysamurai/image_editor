@@ -3,8 +3,8 @@ import { BrushSizeAction, Filters } from "./types/imageEditor.types";
 import ImageEditor from "./imageEditor";
 
 /**
-* @property {Function} addCropperEvents - Assign event listeners to crop stuff
-*/
+ * @property {Function} addCropperEvents - Assign event listeners to crop stuff
+ */
 export const addCropperEvents = (editor: ImageEditor): void => {
   editor.cropperZoomInBtn.addEventListener("click", () => {
     editor.cropper.zoom(0.1);
@@ -83,12 +83,11 @@ export const addCropperEvents = (editor: ImageEditor): void => {
   editor.cropperBtnApply.addEventListener("click", () => {
     editor.applyChange();
   });
-}
-
+};
 
 /**
-* @property {Function} addPaintingEvents - Assign event listeners to paint stuff
-*/
+ * @property {Function} addPaintingEvents - Assign event listeners to paint stuff
+ */
 export const addPaintingEvents = (editor: ImageEditor): void => {
   editor.colorPicker.addEventListener(
     "change",
@@ -126,9 +125,13 @@ export const addPaintingEvents = (editor: ImageEditor): void => {
     if (editor.paintingCanvas) {
       editor.paintingCanvas
         .getContext("2d")
-        ?.clearRect(0, 0, editor.paintingCanvas.width, editor.paintingCanvas.height);
+        ?.clearRect(
+          0,
+          0,
+          editor.paintingCanvas.width,
+          editor.paintingCanvas.height
+        );
     }
-
   });
 
   editor.clearPaintingCanvasBtn.addEventListener("click", () => {
@@ -140,15 +143,19 @@ export const addPaintingEvents = (editor: ImageEditor): void => {
     if (editor.paintingCanvas) {
       editor.paintingCanvas
         .getContext("2d")
-        ?.clearRect(0, 0, editor.paintingCanvas.width, editor.paintingCanvas.height);
+        ?.clearRect(
+          0,
+          0,
+          editor.paintingCanvas.width,
+          editor.paintingCanvas.height
+        );
     }
   });
 
   editor.applyPaintingCanvasBtn.addEventListener("click", () => {
     editor.applyPaintingCanvas();
   });
-}
-
+};
 
 /**
  * @property {Function} addFiltersEvents - Adds events on filter elements in DOM
@@ -159,7 +166,9 @@ export const addFiltersEvents = (editor: ImageEditor): void => {
       const currentElementId = (e.target as HTMLInputElement).id as Filters;
 
       if (currentElementId in Filters) {
-        editor.filtersState[currentElementId] = Number((e.target as HTMLInputElement).value);
+        editor.filtersState[currentElementId] = Number(
+          (e.target as HTMLInputElement).value
+        );
       }
 
       editor.applyFilters(editor.previewImage);
@@ -174,8 +183,7 @@ export const addFiltersEvents = (editor: ImageEditor): void => {
   editor.applyFiltersBtn.addEventListener("click", () => {
     editor.applyChange(true);
   });
-}
-
+};
 
 /**
  * @property {Function} addRotationEvents - Adds events on rotation-related DOM elements
@@ -188,7 +196,9 @@ export const addRotationEvents = (editor: ImageEditor): void => {
     }
 
     editor.cropper.rotateTo(Number((e.target as HTMLInputElement).value));
-    editor.imageRotationValue.textContent = (e.target as HTMLInputElement).value;
+    editor.imageRotationValue.textContent = (
+      e.target as HTMLInputElement
+    ).value;
     editor.cropper.crop();
   });
 
@@ -199,4 +209,4 @@ export const addRotationEvents = (editor: ImageEditor): void => {
   editor.imageRotationSliderApply.addEventListener("click", () => {
     editor.applyRotation();
   });
-}
+};
