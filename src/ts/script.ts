@@ -1,5 +1,4 @@
 import ImageEditor from "./imageEditor";
-
 import { addBasicMicroAnimation } from "./animationUtils";
 import { animateElTopBottom } from "./animationCreators";
 
@@ -41,9 +40,6 @@ const initialUploadButton = toolContainer.querySelector(
 
 // Drag'n'Drop input element
 const dragArea = document.querySelector(".drag-area") as HTMLDivElement;
-
-// Init
-ImageEditor.createLoader(mainContainer);
 
 // Event listeners
 
@@ -104,9 +100,14 @@ function uploadFile(file: File): void {
   }
 }
 
-// Placeholder btn
-addBasicMicroAnimation(initUploadLabel, animateElTopBottom, "#arrow", 0, -10);
+// Init
+window.addEventListener("DOMContentLoaded", () => {
+  ImageEditor.createLoader(mainContainer);
 
-initUploadLabel.addEventListener("click", function () {
-  animateElTopBottom(this.querySelector("#arrow") as HTMLElement, -10, -125);
+  // Placeholder btn
+  addBasicMicroAnimation(initUploadLabel, animateElTopBottom, "#arrow", 0, -10);
+
+  initUploadLabel.addEventListener("click", function () {
+    animateElTopBottom(this.querySelector("#arrow") as HTMLElement, -10, -125);
+  });
 });

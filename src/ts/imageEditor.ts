@@ -61,9 +61,6 @@ export default class ImageEditor {
 
   static editorMode: EditorMode = EditorMode.Crop;
 
-  /**
-   * @property {Function} createLoader - Create loader element in DOM
-   */
   static createLoader(container: HTMLDivElement): void {
     ImageEditor.loadingScreen = createDOMElement({
       elementName: "div",
@@ -73,11 +70,6 @@ export default class ImageEditor {
     container.insertAdjacentElement("beforebegin", ImageEditor.loadingScreen);
   }
 
-  /**
-   * @property {Function} loading - show/hide loader
-   * @param {string} action
-   * @param {boolean} initial - first run - true
-   */
   static loading(action: LoadingState, initial?: boolean): void {
     if (action === LoadingState.Hide) {
       ImageEditor.loadingScreen.classList.add(LoadingState.Hide);
@@ -191,7 +183,7 @@ export default class ImageEditor {
   cropperBtnReflectY!: HTMLButtonElement;
   cropperBtnApply!: HTMLButtonElement;
 
-  aspectRatioBtns: NodeListOf<HTMLButtonElement>;
+  aspectRatioBtns: HTMLButtonElement[] = [];
 
   paintModeBtn!: HTMLButtonElement;
 
@@ -352,6 +344,12 @@ export default class ImageEditor {
     createFiltersControls(this);
     createRotationControls(this);
 
+    this.brushToolsObject = {
+      [BrushMode.Paint]: this.brushModeBtn,
+      [BrushMode.Blur]: this.blurModeBtn,
+      [BrushMode.Eraser]: this.eraserModeBtn,
+    };
+
     // Init cropper
     this.cropper = new Cropper(
       initImageDOM(this, URL.createObjectURL(imageFile)),
@@ -443,13 +441,7 @@ export default class ImageEditor {
         },
       }
     );
-
-    // Aspect Ratio buttons as NodeList
-    this.aspectRatioBtns = (
-      this.cropperControlsContainer.querySelector(
-        ".aspect-ratio-buttons"
-      ) as HTMLDivElement
-    ).querySelectorAll("button");
+    console.log(this.aspectRatioBtns);
 
     initCPDOM(this);
 
@@ -460,12 +452,6 @@ export default class ImageEditor {
     addKeyboardShortcuts(this);
 
     this.setImageFormat(imageFile.type as ImageMimeType);
-
-    this.brushToolsObject = {
-      [BrushMode.Paint]: this.brushModeBtn,
-      [BrushMode.Blur]: this.blurModeBtn,
-      [BrushMode.Eraser]: this.eraserModeBtn,
-    };
 
     addCPEvents(this);
     this.activateEditorMode(EditorMode.Crop, true);

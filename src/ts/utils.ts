@@ -68,7 +68,7 @@ export const addKeyboardShortcuts = (editor: ImageEditor): void => {
  * @param {HTMLCollection} elements
  */
 export const removeToolActiveStates = (
-  elements: NodeListOf<HTMLButtonElement>
+  elements: Array<HTMLButtonElement>
 ): void => {
   elements.forEach((btn) => btn.classList.remove("active"));
 };
