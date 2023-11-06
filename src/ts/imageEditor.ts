@@ -107,6 +107,11 @@ export default class ImageEditor {
     cropper.clear();
     cropper.setCanvasData(cropper.imageCenter);
 
+    ImageEditor.instanceRef.URLObjects.forEach(URLObject => {
+      URL.revokeObjectURL(URLObject);
+    });
+    ImageEditor.instanceRef.URLObjects.length = 0;
+
     // Default mode - crop
     ImageEditor.instanceRef.activateEditorMode(EditorMode.Crop, true);
     removeToolActiveStates(ImageEditor.instanceRef.aspectRatioBtns);
@@ -247,6 +252,9 @@ export default class ImageEditor {
    * @property {Array} #cropperHistory - array of previous canvas elements
    */
   #cropperHistory: HTMLCanvasElement[] = [];
+
+
+  URLObjects: string[] = []
 
   /**
    * @property {number} #croppersCounter - counts how many times new Cropper object was created. 0 by default, 1 after first initialization
@@ -404,6 +412,8 @@ export default class ImageEditor {
 
             this.#cropperHistory.push(this.initialCanvas);
             this.setUndoBtn();
+
+            this.URLObjects.push(this.previewImage.src)
           }
 
           if (this.#croppersCounter === 1 && this.isMobile) {
@@ -441,7 +451,6 @@ export default class ImageEditor {
         },
       }
     );
-    console.log(this.aspectRatioBtns);
 
     initCPDOM(this);
 
@@ -655,6 +664,9 @@ export default class ImageEditor {
         if (blob) {
           let newImage = new Image();
           let url = URL.createObjectURL(blob);
+          this.URLObjects.push(url);
+          console.log(this.URLObjects);
+
           newImage.src = url;
 
           newImage.onload = () => {
