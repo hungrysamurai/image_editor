@@ -5,7 +5,8 @@
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
     "start": "parcel index.html --dist-dir ./dev",
-    "build": "parcel build index.html --dist-dir ./build"
+    "build": "node ../_scripts/cleanDir.js ./build && parcel build index.html --dist-dir ./build && node ../_scripts/cleanDir.js .parcel-cache",
+    "deploy": "node ../_scripts/cleanDir.js ../../server/dist/public/projects/image_editor && parcel build index.html --dist-dir ../../server/dist/public/projects/image_editor && node ../_scripts/cleanDir.js .parcel-cache"
   },
   "repository": {
     "type": "git",
@@ -28,8 +29,8 @@
     }
   },
   "devDependencies": {
-    "@parcel/transformer-sass": "^2.8.3",
-    "parcel": "^2.8.3",
+    "@parcel/transformer-sass": "^2.12.0",
+    "parcel": "^2.12.0",
     "typescript": "^5.2.2"
   },
   "dependencies": {
