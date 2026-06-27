@@ -9,13 +9,13 @@ const isMobile: boolean = window.matchMedia("(pointer:coarse)").matches;
 
 // DOM elements
 const cpContainer = document.querySelector(
-  ".control-panel-container"
+  ".control-panel-container",
 ) as HTMLDivElement;
 const mainContainer = document.querySelector(
-  ".main-container"
+  ".main-container",
 ) as HTMLDivElement;
 const toolContainer = document.querySelector(
-  ".tool-container"
+  ".tool-container",
 ) as HTMLDivElement;
 
 /**
@@ -30,12 +30,12 @@ const DOMContainers: HTMLDivElement[] = [
 // Upload input element
 const uploadInput = document.querySelector("#upload-input") as HTMLInputElement;
 const initUploadLabel = document.querySelector(
-  "#initial-upload"
+  "#initial-upload",
 ) as HTMLLabelElement;
 
 // Initial Upload button
 const initialUploadButton = toolContainer.querySelector(
-  ".placeholder-button"
+  ".placeholder-button",
 ) as HTMLDivElement;
 
 // Drag'n'Drop input element
