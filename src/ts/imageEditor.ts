@@ -89,12 +89,12 @@ export default class ImageEditor {
   static create(
     DOMContainers: HTMLDivElement[],
     imageFile: File,
-    isMobile: boolean
+    isMobile: boolean,
   ) {
     ImageEditor.instanceRef = new ImageEditor(
       DOMContainers,
       imageFile,
-      isMobile
+      isMobile,
     );
   }
 
@@ -107,7 +107,7 @@ export default class ImageEditor {
     cropper.clear();
     cropper.setCanvasData(cropper.imageCenter);
 
-    ImageEditor.instanceRef.URLObjects.forEach(URLObject => {
+    ImageEditor.instanceRef.URLObjects.forEach((URLObject) => {
       URL.revokeObjectURL(URLObject);
     });
     ImageEditor.instanceRef.URLObjects.length = 0;
@@ -124,6 +124,10 @@ export default class ImageEditor {
     ImageEditor.instanceRef.initialCanvas = null;
 
     ImageEditor.instanceRef.setImageFormat(imageFile.type as ImageMimeType);
+    ImageEditor.instanceRef.imageName = imageFile.name.substring(
+      0,
+      imageFile.name.length - 4,
+    );
   }
 
   static loadingScreen: HTMLDivElement;
@@ -253,8 +257,7 @@ export default class ImageEditor {
    */
   #cropperHistory: HTMLCanvasElement[] = [];
 
-
-  URLObjects: string[] = []
+  URLObjects: string[] = [];
 
   /**
    * @property {number} #croppersCounter - counts how many times new Cropper object was created. 0 by default, 1 after first initialization
@@ -306,7 +309,7 @@ export default class ImageEditor {
   private constructor(
     DOMContainers: HTMLDivElement[],
     imageFile: File,
-    isMobile: boolean
+    isMobile: boolean,
   ) {
     ImageEditor.loading(LoadingState.Show, true);
 
@@ -318,17 +321,17 @@ export default class ImageEditor {
 
     // Get individual tool container
     this.cropperControlsContainer = this.toolContainer.querySelector(
-      ".crop-controls"
+      ".crop-controls",
     ) as HTMLDivElement;
     this.paintingControlsContainer = this.toolContainer.querySelector(
-      ".paint-controls"
+      ".paint-controls",
     ) as HTMLDivElement;
     this.filterControlsContainer = this.toolContainer.querySelector(
-      ".filters-controls"
+      ".filters-controls",
     ) as HTMLDivElement;
     this.filtersSliders = [];
     this.rotationControlsContainer = this.toolContainer.querySelector(
-      ".rotation-controls"
+      ".rotation-controls",
     ) as HTMLDivElement;
 
     // Group tool containers to array
@@ -375,7 +378,7 @@ export default class ImageEditor {
           this.applyFilters(this.previewImage);
 
           this.croppedBox = this.cropper.viewBox.querySelector(
-            "img"
+            "img",
           ) as HTMLImageElement;
           this.applyFilters(this.croppedBox);
 
@@ -413,7 +416,7 @@ export default class ImageEditor {
             this.#cropperHistory.push(this.initialCanvas);
             this.setUndoBtn();
 
-            this.URLObjects.push(this.previewImage.src)
+            this.URLObjects.push(this.previewImage.src);
           }
 
           if (this.#croppersCounter === 1 && this.isMobile) {
@@ -449,7 +452,7 @@ export default class ImageEditor {
             this.setZoombuttonsState(ZoomButtonsState.ZoomOut);
           }
         },
-      }
+      },
     );
 
     initCPDOM(this);
@@ -677,7 +680,7 @@ export default class ImageEditor {
         }
       },
       this.#imageFormats[this.currentImageFormatIndex][0],
-      this.#imageFormats[this.currentImageFormatIndex][1]
+      this.#imageFormats[this.currentImageFormatIndex][1],
     );
   }
 
@@ -707,7 +710,7 @@ export default class ImageEditor {
         0,
         nextCanvas.width,
         nextCanvas.height,
-        this.filtersState.blur * 3
+        this.filtersState.blur * 3,
       );
       ctx.drawImage(nextCanvas, 0, 0);
 
@@ -797,14 +800,14 @@ export default class ImageEditor {
       0,
       canvas.width,
       canvas.height,
-      this.filtersState.blur * 3
+      this.filtersState.blur * 3,
     );
 
     ctx.drawImage(canvas, 0, 0);
 
     let result = canvas.toDataURL(
       this.#imageFormats[this.currentImageFormatIndex][0],
-      this.#imageFormats[this.currentImageFormatIndex][1]
+      this.#imageFormats[this.currentImageFormatIndex][1],
     );
 
     const createEl = document.createElement("a");
@@ -901,7 +904,7 @@ export default class ImageEditor {
           x as number,
           y as number,
           x2,
-          y2
+          y2,
         );
 
         x = x2;
@@ -932,7 +935,7 @@ export default class ImageEditor {
           x as number,
           y as number,
           x2,
-          y2
+          y2,
         );
 
         x = x2;
@@ -959,7 +962,7 @@ export default class ImageEditor {
 
     let offScreenCanvas = document.createElement("canvas");
     let offScreenCtx = offScreenCanvas.getContext(
-      "2d"
+      "2d",
     ) as CanvasRenderingContext2D;
 
     this.offScreenCanvas = offScreenCanvas;
@@ -1000,13 +1003,13 @@ export default class ImageEditor {
         0,
         0,
         merged.width,
-        merged.height
+        merged.height,
       );
 
       // Save painting progress
       this.drawBackCanvas = document.createElement("canvas");
       const drawBackCtx = this.drawBackCanvas.getContext(
-        "2d"
+        "2d",
       ) as CanvasRenderingContext2D;
       this.drawBackCanvas.width = this.paintingCanvas.width;
       this.drawBackCanvas.height = this.paintingCanvas.height;
@@ -1015,7 +1018,7 @@ export default class ImageEditor {
         0,
         0,
         this.drawBackCanvas.width,
-        this.drawBackCanvas.height
+        this.drawBackCanvas.height,
       );
     }
 
@@ -1149,7 +1152,7 @@ export default class ImageEditor {
 
     if (this.paintingCanvas && this.drawBackCanvas && this.offScreenCanvas) {
       let paintingCanvasCtx = this.paintingCanvas.getContext(
-        "2d"
+        "2d",
       ) as CanvasRenderingContext2D;
 
       paintingCanvasCtx.drawImage(
@@ -1157,7 +1160,7 @@ export default class ImageEditor {
         0,
         0,
         this.paintingCanvas.width,
-        this.paintingCanvas.height
+        this.paintingCanvas.height,
       );
 
       paintingCanvasCtx.drawImage(
@@ -1165,7 +1168,7 @@ export default class ImageEditor {
         0,
         0,
         this.paintingCanvas.width,
-        this.paintingCanvas.height
+        this.paintingCanvas.height,
       );
 
       this.clearBlurCanvas();
@@ -1204,7 +1207,7 @@ export default class ImageEditor {
 
         this.mainContainer.insertAdjacentElement(
           "beforebegin",
-          this.brushCursor
+          this.brushCursor,
         );
       });
 
